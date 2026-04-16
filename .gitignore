@@ -6,6 +6,7 @@ contracts/out/
 contracts/cache/
 contracts/broadcast/
 contracts/.gas-snapshot
+contracts/lcov.info
 
 # Node / frontend
 node_modules/
