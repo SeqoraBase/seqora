@@ -106,6 +106,7 @@ contract ProvenanceRegistry_Invariant_Test is Test {
             uint256 tid = handler.tokenIdAt(0);
 
             SeqoraTypes.WetLabAttestation memory att = SeqoraTypes.WetLabAttestation({
+                tokenId: tid,
                 oracle: orc,
                 vendor: "inv",
                 orderRef: "inv",

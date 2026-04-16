@@ -29,7 +29,7 @@ contract RoyaltyRouterHandler is CommonBase, StdCheats, StdUtils {
     address public immutable treasury;
     address public immutable governance;
 
-    // Pool layout so the billed currency is usdc on zeroForOne exactInput.
+    // Pool layout so the billed (input) currency is usdc on zeroForOne=false exactInput.
     address internal constant LOW_CURRENCY = address(0x1);
 
     address[] internal _actors;
@@ -156,7 +156,8 @@ contract RoyaltyRouterHandler is CommonBase, StdCheats, StdUtils {
             tickSpacing: 60,
             hooks: IHooks(address(router))
         });
-        SwapParams memory p = SwapParams({ zeroForOne: true, amountSpecified: -int256(amt), sqrtPriceLimitX96: 0 });
+        // Post H-01 fix: zeroForOne=false so usdc (currency1) is the input (billed) currency.
+        SwapParams memory p = SwapParams({ zeroForOne: false, amountSpecified: -int256(amt), sqrtPriceLimitX96: 0 });
 
         try poolManager.simulateSwap(IHooks(address(router)), sender, key, p, abi.encode(tokenId)) {
             hookSuccesses++;

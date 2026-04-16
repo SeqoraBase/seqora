@@ -45,6 +45,7 @@ library ProvenanceSigning {
         bytes32 structHash = keccak256(
             abi.encode(
                 registry.WET_LAB_ATTESTATION_TYPEHASH(),
+                att.tokenId,
                 att.oracle,
                 keccak256(bytes(att.vendor)),
                 keccak256(bytes(att.orderRef)),

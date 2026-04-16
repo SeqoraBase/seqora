@@ -293,12 +293,19 @@ library SeqoraTypes {
 
     /// @notice Wet-lab synthesis attestation from a governance-approved oracle.
     /// @dev v1 = signed synthesis receipt (Twist/IDT/Ansa). v2 will accept TEE proofs.
+    ///      `tokenId` is the FIRST field and MUST match the tokenId arg of
+    ///      `recordWetLabAttestation` — the attestation is bound to the design it describes
+    ///      under the oracle's signature (sec-audit ProvenanceRegistry H-01 2026-04-16). A
+    ///      mismatch reverts `TokenIdMismatch`, defeating cross-tokenId replay where a
+    ///      captured signature for design A is submitted against design B.
+    /// @param tokenId Design id the receipt describes. Signed by the oracle.
     /// @param oracle Address of the approved oracle that signed.
     /// @param vendor Free-form vendor name (e.g. "Twist Bioscience").
     /// @param orderRef Vendor order reference / receipt id.
     /// @param synthesizedAt Timestamp synthesis was completed.
     /// @param payloadHash Hash of the off-chain receipt blob.
     struct WetLabAttestation {
+        uint256 tokenId;
         address oracle;
         string vendor;
         string orderRef;

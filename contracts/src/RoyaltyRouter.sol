@@ -36,15 +36,28 @@ pragma solidity ^0.8.24;
 //   address is the deployer's problem — `validateHookAddress(this)` in the constructor will
 //   revert on mismatch, failing deploys loudly until the right CREATE2 salt is used.
 //
-// Take-side choice
-// ----------------
-//   We take in `beforeSwap` by returning a positive `specifiedDelta` (the hook is owed the
-//   fee). The PoolManager then carries that credit to `afterSwap` / the unlock callback,
-//   where the sender settles against us. In `afterSwap` we actually `take(currency, this,
-//   fee)` and `transfer` to treasury + splits. This is the "specified side" pattern used
-//   by CustomCurveHook / LPFeeTakingHook — it works cleanly for both exactInput and
-//   exactOutput without a second swap leg. v1 collects ONLY in the unspecified currency
-//   (the side the swapper is spending) to keep the math simple and avoid a second transfer.
+// Take-side choice (post H-01 fix)
+// --------------------------------
+//   The invariant we want is: **the royalty + protocol fee is ALWAYS denominated in the
+//   currency the swapper is SPENDING** (and therefore the side that must be on the
+//   allowlist — USDC in v1). v4 calls the "side the swapper commits up-front" the
+//   *specified* side for exactInput and the *unspecified* side for exactOutput:
+//
+//     exactInput  (amountSpecified < 0) → specified   = INPUT (what the user spends).
+//     exactOutput (amountSpecified > 0) → unspecified = INPUT (what the user spends).
+//
+//   So the hook bills the SPECIFIED side on exactInput and the UNSPECIFIED side on
+//   exactOutput. Both cases collect in the input currency, which is the only side the
+//   licensee materially commits to. The previous "bill the unspecified side always"
+//   design silently skipped the dominant "buy-LicenseToken-with-USDC" exactInput flow
+//   (unspecified = LicenseToken, not allowlisted) — see sec-audit H-01 2026-04-16.
+//
+//   BeforeSwapDelta encoding:
+//     exactInput  → `toBeforeSwapDelta(+total, 0)` — the hook is OWED `total` in the
+//                   specified currency; PoolManager debits the swapper's specified-side.
+//     exactOutput → `toBeforeSwapDelta(0, +total)` — the hook is OWED `total` in the
+//                   unspecified currency; PoolManager debits the swapper's unspecified-side.
+//   In afterSwap we `take(currency, this, total)` against the same currency we billed.
 //
 // Fee-on-top vs inclusive
 // -----------------------
@@ -173,29 +186,37 @@ contract RoyaltyRouter is IRoyaltyRouter, IHooks, Ownable2Step, ReentrancyGuard 
     bool public hookCollectionPaused;
 
     // -------------------------------------------------------------------------
-    // Transient hook context
+    // Transient hook context (EIP-1153)
     // -------------------------------------------------------------------------
 
-    /// @dev Memo of the unspecified-side amount the hook needs to `take` in `afterSwap`, scoped
-    ///      per swap by a single-slot `_pendingTake` struct keyed on (tokenId, currency). Written
-    ///      in `beforeSwap`, consumed in `afterSwap`. The PoolManager's unlock lifecycle
-    ///      guarantees no interleaved v4 swap can overwrite this within a single transaction
-    ///      because all hook callbacks fire inside one unlock frame. Cleared on consumption.
+    /// @dev Per-tx memo of the amount the hook needs to `take` in `afterSwap`. Lives in
+    ///      EIP-1153 transient storage (`tstore`/`tload`) so there is no cross-tx leak and
+    ///      no chance of stale state poisoning the next swap if a future v4 version ever
+    ///      skips the afterSwap dispatch after beforeSwap wrote the memo (sec-audit H-02
+    ///      2026-04-16). evm_version is cancun (foundry.toml) so the opcodes are available.
     ///
-    ///      NOTE: for v1 we support at most ONE license-bearing swap per top-level v4 operation
-    ///      (a reasonable constraint; nested v4 swaps of license tokens are extremely unusual).
-    ///      If a composite callback tries to pile up a second pending take, `_pendingTake.amount
-    ///      != 0` would collide — we overwrite and emit only the final `HookCollected`. This is
-    ///      documented as a TODO for sec-auditor; the conservative fix is per-call transient
-    ///      storage (EIP-1153), which lands when we bump to cancun-only builds.
+    ///      Four contiguous transient slots are reserved starting at `_PENDING_TAKE_SLOT`:
+    ///        slot +0: tokenId        (uint256)
+    ///        slot +1: token address  (uint256 — high 96 bits zero)
+    ///        slot +2: royaltyAmount  (uint256)
+    ///        slot +3: protocolFee    (uint256)
+    ///      The slot is derived as `uint256(keccak256("seqora.royaltyRouter.pendingTake.v1"))`
+    ///      — a deterministic value far from the regular storage-layout namespace so no
+    ///      future regular-storage field can collide. `tstore` is automatically zeroed at
+    ///      end-of-tx by the EVM; we still `delete` (write 0) before external calls for CEI.
+    ///
+    ///      NOTE: v1 supports at most ONE license-bearing swap per `unlock` frame. Composite
+    ///      operations with back-to-back swap legs process each swap strictly sequentially
+    ///      (beforeSwap1 → afterSwap1 → beforeSwap2 → afterSwap2) in current v4-core, so
+    ///      the four-slot memo is consumed by afterSwap before the next beforeSwap writes.
+    bytes32 private constant _PENDING_TAKE_SLOT = keccak256("seqora.royaltyRouter.pendingTake.v1");
+
     struct PendingTake {
         uint256 tokenId;
         address token;
         uint256 royaltyAmount;
         uint256 protocolFee;
     }
-
-    PendingTake private _pendingTake;
 
     // -------------------------------------------------------------------------
     // Modifiers
@@ -415,16 +436,16 @@ contract RoyaltyRouter is IRoyaltyRouter, IHooks, Ownable2Step, ReentrancyGuard 
     ///      zero delta and does NOT block the swap. This is a design choice (permissive for
     ///      non-license pools, strict via `supportedToken` for license pools).
     ///
-    ///      Math:
-    ///        amountSpecified < 0  → exactInput  → fee comes out of the INPUT amount (the
-    ///                                             currency being spent; "unspecified side"
-    ///                                             is the currency being received).
-    ///        amountSpecified >= 0 → exactOutput → fee comes out of the OUTPUT amount (still
-    ///                                             the currency the pool owes; "unspecified
-    ///                                             side" is what the swapper receives).
-    ///      In both cases we bill the unspecified side — the hook owes or is owed the fee
-    ///      against the same currency the swap's counter-leg is in. Simpler than a two-side
-    ///      take and sufficient for v1.
+    ///      Billing side (sec-audit H-01 2026-04-16):
+    ///        exactInput  (amountSpecified < 0) → bill the SPECIFIED currency (= INPUT).
+    ///        exactOutput (amountSpecified > 0) → bill the UNSPECIFIED currency (= INPUT).
+    ///      Both cases collect in the currency the swapper is SPENDING, so royalty + protocol
+    ///      fee are always denominated in the allowlisted accounting currency (USDC in v1)
+    ///      regardless of swap direction.
+    ///
+    ///      Transient storage (sec-audit H-02 2026-04-16): the cross-callback memo is written
+    ///      to EIP-1153 transient slots, not regular storage, so there is no way for a stale
+    ///      memo to poison the next tx.
     function beforeSwap(
         address,
         /* sender */
@@ -449,13 +470,15 @@ contract RoyaltyRouter is IRoyaltyRouter, IHooks, Ownable2Step, ReentrancyGuard 
 
         // Nominal swap amount (input for exactIn, output for exactOut). Treat as absolute.
         int256 amountSpecified = params.amountSpecified;
-        uint256 absAmount = amountSpecified < 0 ? uint256(-amountSpecified) : uint256(amountSpecified);
+        bool exactInput = amountSpecified < 0;
+        uint256 absAmount = exactInput ? uint256(-amountSpecified) : uint256(amountSpecified);
         if (absAmount == 0) return (selector, BeforeSwapDeltaLibrary.ZERO_DELTA, 0);
 
-        // Determine which side we bill. The "unspecified" currency (per v4 semantics) is the
-        // OTHER side of the swap relative to `amountSpecified`. For a zeroForOne exactInput,
-        // specified = currency0 (input), unspecified = currency1 (output).
-        Currency billedCurrency = _unspecifiedCurrency(key, params);
+        // Resolve the INPUT currency (what the swapper spends) — this is the side we bill so
+        // royalty is always denominated in the currency the user is committing.
+        //   exactInput  → INPUT = specified side.
+        //   exactOutput → INPUT = unspecified side.
+        Currency billedCurrency = _inputCurrency(key, params);
         address billedToken = Currency.unwrap(billedCurrency);
 
         // Only proceed if the billed currency is on the allowlist. Native ETH (address(0)) is
@@ -473,17 +496,22 @@ contract RoyaltyRouter is IRoyaltyRouter, IHooks, Ownable2Step, ReentrancyGuard 
         uint256 total = royaltyAmount + protocolFee;
         if (total == 0) return (selector, BeforeSwapDeltaLibrary.ZERO_DELTA, 0);
 
-        // Stage the take for afterSwap to settle. Overwriting here (vs. append) is fine for v1:
-        // v4 hook callbacks fire synchronously inside the PoolManager unlock, so a second
-        // beforeSwap cannot interleave before the matching afterSwap drains the memo.
-        _pendingTake = PendingTake({
-            tokenId: tokenId, token: billedToken, royaltyAmount: royaltyAmount, protocolFee: protocolFee
-        });
+        // Stage the take for afterSwap to settle. Transient storage (EIP-1153) — cleared at
+        // end-of-tx automatically by the EVM; also `delete` cleared by afterSwap before
+        // external calls for CEI.
+        _tstorePendingTake(
+            PendingTake({
+                tokenId: tokenId, token: billedToken, royaltyAmount: royaltyAmount, protocolFee: protocolFee
+            })
+        );
 
-        // Positive unspecified delta ⇒ the hook is OWED `total` in the billed currency; the
-        // swapper's unspecified-side balance will be debited by this much before `afterSwap`
-        // settles. `specifiedDelta` stays zero so the swap's specified amount is unchanged.
-        delta = toBeforeSwapDelta(0, int128(int256(total)));
+        // Encode the fee delta on the correct side:
+        //   exactInput  → specifiedDelta = +total (specified = INPUT currency being billed).
+        //   exactOutput → unspecifiedDelta = +total (unspecified = INPUT currency being billed).
+        // Positive delta = the hook is OWED `total` in the billed currency; PoolManager debits
+        // the swapper's input-side balance and carries the credit to `afterSwap`.
+        int128 totalDelta = int128(int256(total));
+        delta = exactInput ? toBeforeSwapDelta(totalDelta, 0) : toBeforeSwapDelta(0, totalDelta);
     }
 
     /// @notice v4 `afterSwap` hook. Settles the pending take by calling `PoolManager.take`
@@ -505,14 +533,16 @@ contract RoyaltyRouter is IRoyaltyRouter, IHooks, Ownable2Step, ReentrancyGuard 
     {
         selector = IHooks.afterSwap.selector;
 
-        PendingTake memory p = _pendingTake;
+        PendingTake memory p = _tloadPendingTake();
         if (p.royaltyAmount == 0 && p.protocolFee == 0) {
             // Nothing to settle (paused / non-license / unsupported-token path in beforeSwap).
             return (selector, 0);
         }
 
-        // Consume the memo exactly once — clear before external calls for belt-and-suspenders.
-        delete _pendingTake;
+        // Consume the memo exactly once — clear transient slots before external calls for CEI.
+        // The EVM auto-zeroes transient storage at end-of-tx but CEI discipline still matters
+        // for nested reentrancy within the same tx.
+        _clearPendingTake();
 
         uint256 total = p.royaltyAmount + p.protocolFee;
         Currency c = Currency.wrap(p.token);
@@ -624,20 +654,74 @@ contract RoyaltyRouter is IRoyaltyRouter, IHooks, Ownable2Step, ReentrancyGuard 
         return rule.recipient;
     }
 
-    /// @dev Compute which side of the pool the swap's "unspecified" amount is denominated in.
-    ///      v4: `amountSpecified < 0` ⇒ exactInput (specified is the amount going IN).
-    ///           `amountSpecified > 0` ⇒ exactOutput (specified is the amount coming OUT).
+    /// @dev Compute the INPUT currency — the one the swapper is SPENDING — regardless of
+    ///      exactInput vs exactOutput. This is the side `beforeSwap` bills so royalty + protocol
+    ///      fee are always denominated in the user-spent currency (sec-audit H-01 2026-04-16).
     ///
-    ///         zeroForOne=true, exactIn  → specified=cur0, unspecified=cur1
-    ///         zeroForOne=true, exactOut → specified=cur1, unspecified=cur0
-    ///         zeroForOne=false, exactIn → specified=cur1, unspecified=cur0
-    ///         zeroForOne=false, exactOut→ specified=cur0, unspecified=cur1
-    function _unspecifiedCurrency(PoolKey calldata key, SwapParams calldata params) internal pure returns (Currency) {
-        bool exactInput = params.amountSpecified < 0;
-        // exactIn: specified is the token being spent (zeroForOne=true → cur0 spent).
-        // exactOut: specified is the token being received.
-        bool specifiedIsZero = exactInput ? params.zeroForOne : !params.zeroForOne;
-        return specifiedIsZero ? key.currency1 : key.currency0;
+    ///      v4 semantics:
+    ///        `amountSpecified < 0` ⇒ exactInput (specified = amount going IN, user spends it).
+    ///        `amountSpecified > 0` ⇒ exactOutput (specified = amount coming OUT, user receives it).
+    ///      `zeroForOne = true` ⇒ swap cur0 → cur1 (user spends cur0, receives cur1).
+    ///      `zeroForOne = false` ⇒ swap cur1 → cur0 (user spends cur1, receives cur0).
+    ///
+    ///      Therefore the INPUT currency is:
+    ///        zeroForOne=true  → cur0 (regardless of exact-in/out).
+    ///        zeroForOne=false → cur1 (regardless of exact-in/out).
+    function _inputCurrency(PoolKey calldata key, SwapParams calldata params) internal pure returns (Currency) {
+        return params.zeroForOne ? key.currency0 : key.currency1;
+    }
+
+    // -------------------------------------------------------------------------
+    // EIP-1153 transient storage helpers for `PendingTake`
+    // -------------------------------------------------------------------------
+    //
+    // Solidity 0.8.24 does not yet expose a native `transient` keyword for struct types, so the
+    // helpers use inline assembly. The base slot is `_PENDING_TAKE_SLOT` with three sibling
+    // slots derived by adding 1/2/3. Slot derivation is addition (no keccak) because the base
+    // is already a keccak of a deterministic string and the four-slot range is exclusive to
+    // this contract — there is no collision risk with future `tstore` users.
+
+    /// @dev Write the pending-take memo to transient storage. Called in `beforeSwap`.
+    function _tstorePendingTake(PendingTake memory p) internal {
+        bytes32 slot = _PENDING_TAKE_SLOT;
+        uint256 tokenId_ = p.tokenId;
+        address token_ = p.token;
+        uint256 royaltyAmount_ = p.royaltyAmount;
+        uint256 protocolFee_ = p.protocolFee;
+        assembly {
+            tstore(slot, tokenId_)
+            tstore(add(slot, 1), token_)
+            tstore(add(slot, 2), royaltyAmount_)
+            tstore(add(slot, 3), protocolFee_)
+        }
+    }
+
+    /// @dev Read the pending-take memo from transient storage. Called in `afterSwap`.
+    function _tloadPendingTake() internal view returns (PendingTake memory p) {
+        bytes32 slot = _PENDING_TAKE_SLOT;
+        uint256 tokenId_;
+        address token_;
+        uint256 royaltyAmount_;
+        uint256 protocolFee_;
+        assembly {
+            tokenId_ := tload(slot)
+            token_ := tload(add(slot, 1))
+            royaltyAmount_ := tload(add(slot, 2))
+            protocolFee_ := tload(add(slot, 3))
+        }
+        p = PendingTake({ tokenId: tokenId_, token: token_, royaltyAmount: royaltyAmount_, protocolFee: protocolFee_ });
+    }
+
+    /// @dev Zero the pending-take transient slots. Belt-and-suspenders CEI cleanup in
+    ///      `afterSwap`; the EVM also auto-zeroes at end-of-tx.
+    function _clearPendingTake() internal {
+        bytes32 slot = _PENDING_TAKE_SLOT;
+        assembly {
+            tstore(slot, 0)
+            tstore(add(slot, 1), 0)
+            tstore(add(slot, 2), 0)
+            tstore(add(slot, 3), 0)
+        }
     }
 
     // -------------------------------------------------------------------------

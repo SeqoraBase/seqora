@@ -118,8 +118,7 @@ abstract contract RoyaltyRouterBase is Test {
     }
 
     function _defaultPoolKey() internal view returns (PoolKey memory) {
-        // usdc is "unspecified" when zeroForOne=true and exactInput=true only if currency1=usdc.
-        // Pick currency0 < currency1 per v4 invariants. Pair USDC with a cheap placeholder token.
+        // Pair USDC with a cheap placeholder token. currency0 < currency1 per v4 invariants.
         address other = address(0x1); // < address(usdc) in all realistic mock cases
         (address c0, address c1) = other < address(usdc) ? (other, address(usdc)) : (address(usdc), other);
         return PoolKey({
@@ -131,9 +130,16 @@ abstract contract RoyaltyRouterBase is Test {
         });
     }
 
-    /// @notice Build a SwapParams whose unspecified currency is usdc (so the hook bills in USDC).
-    /// @dev With our pool key (currency0 = 0x1, currency1 = usdc), exactInput zeroForOne swaps
-    ///      spend currency0 and receive currency1 ⇒ specified = currency0, unspecified = currency1 = usdc.
+    /// @notice Build a SwapParams where usdc is the INPUT currency (so the hook bills in USDC).
+    /// @dev Post H-01 fix the hook bills the INPUT currency. With our pool key
+    ///      (currency0 = 0x1, currency1 = usdc), `zeroForOne=false` means the user SELLS
+    ///      currency1 (usdc) and BUYS currency0. For exactInput, amountSpecified < 0.
+    function _swapParamsUsdcInput(int256 amountSpecified) internal pure returns (SwapParams memory p) {
+        p = SwapParams({ zeroForOne: false, amountSpecified: amountSpecified, sqrtPriceLimitX96: 0 });
+    }
+
+    /// @notice Legacy helper kept for tests that intentionally put usdc on the UNSPECIFIED
+    ///         (non-input) side to verify the hook short-circuits.
     function _swapParamsUsdcUnspecified(int256 amountSpecified) internal pure returns (SwapParams memory p) {
         p = SwapParams({ zeroForOne: true, amountSpecified: amountSpecified, sqrtPriceLimitX96: 0 });
     }
@@ -670,7 +676,7 @@ contract RoyaltyRouter_HookIntegration is RoyaltyRouterBase {
 
     function _runSwap(int256 amountSpecified) internal {
         PoolKey memory key = _defaultPoolKey();
-        SwapParams memory p = _swapParamsUsdcUnspecified(amountSpecified);
+        SwapParams memory p = _swapParamsUsdcInput(amountSpecified);
         bytes memory hookData = abi.encode(tokenId);
         poolManager.simulateSwap(IHooks(address(router)), address(this), key, p, hookData);
     }
@@ -700,22 +706,25 @@ contract RoyaltyRouter_HookIntegration is RoyaltyRouterBase {
         assertEq(usdc.balanceOf(TREASURY), fee);
         assertEq(usdc.balanceOf(address(router)), 0);
 
-        // BeforeSwapDelta carries +total on unspecified side, 0 on specified.
+        // Post H-01 fix: exactInput delta is on the SPECIFIED side (= input currency = usdc).
         BeforeSwapDelta d = poolManager.lastBeforeDelta();
         int128 spec = BeforeSwapDeltaLibrary.getSpecifiedDelta(d);
         int128 unspec = BeforeSwapDeltaLibrary.getUnspecifiedDelta(d);
-        assertEq(spec, int128(0), "specified delta should be zero");
-        assertEq(unspec, int128(int256(total)), "unspecified delta should equal total");
+        assertEq(spec, int128(int256(total)), "specified delta should equal total (exactInput bills specified)");
+        assertEq(unspec, int128(0), "unspecified delta should be zero");
         assertEq(poolManager.lastAfterDelta(), int128(0));
     }
 
-    function test_Hook_ExactOutput_AlsoBillsUnspecified() public {
-        // For exactOutput with our pool (currency0=0x1, currency1=usdc), the unspecified side
-        // (billed currency) is currency0 when zeroForOne=true and currency1 (=usdc) when
-        // zeroForOne=false. Use zeroForOne=false so the hook bills in USDC.
+    function test_Hook_ExactOutput_BillsUnspecifiedSide() public {
+        // For exactOutput (positive amountSpecified) with zeroForOne=false:
+        //   - specified = currency0 (output, what user buys)
+        //   - unspecified = currency1 = usdc (input, what user spends)
+        // Post H-01 fix: the hook bills INPUT = unspecified for exactOutput. Delta is on
+        // the UNSPECIFIED side: toBeforeSwapDelta(0, +total).
         uint256 absAmount = 500_000;
         (uint256 royalty, uint256 fee) = _expectedTake(absAmount);
-        usdc.mint(address(poolManager), royalty + fee);
+        uint256 total = royalty + fee;
+        usdc.mint(address(poolManager), total);
 
         PoolKey memory key = _defaultPoolKey();
         SwapParams memory p =
@@ -724,6 +733,13 @@ contract RoyaltyRouter_HookIntegration is RoyaltyRouterBase {
 
         assertEq(usdc.balanceOf(SPLITS), royalty);
         assertEq(usdc.balanceOf(TREASURY), fee);
+
+        // Delta assertions: exactOutput → unspecified side.
+        BeforeSwapDelta d = poolManager.lastBeforeDelta();
+        int128 spec = BeforeSwapDeltaLibrary.getSpecifiedDelta(d);
+        int128 unspec = BeforeSwapDeltaLibrary.getUnspecifiedDelta(d);
+        assertEq(spec, int128(0), "specified delta zero for exactOutput");
+        assertEq(unspec, int128(int256(total)), "unspecified delta equals total for exactOutput");
     }
 
     function test_Hook_FallbackRecipient_WhenSplitsUnset() public {
@@ -737,7 +753,7 @@ contract RoyaltyRouter_HookIntegration is RoyaltyRouterBase {
         usdc.mint(address(poolManager), royalty + fee);
 
         PoolKey memory key = _defaultPoolKey();
-        SwapParams memory p = _swapParamsUsdcUnspecified(-int256(absAmount));
+        SwapParams memory p = _swapParamsUsdcInput(-int256(absAmount));
         bytes memory hookData = abi.encode(tid);
         poolManager.simulateSwap(IHooks(address(router)), address(this), key, p, hookData);
 
@@ -757,7 +773,7 @@ contract RoyaltyRouter_HookIntegration is RoyaltyRouterBase {
         usdc.mint(address(poolManager), fee);
 
         PoolKey memory key = _defaultPoolKey();
-        SwapParams memory p = _swapParamsUsdcUnspecified(-int256(absAmount));
+        SwapParams memory p = _swapParamsUsdcInput(-int256(absAmount));
         bytes memory hookData = abi.encode(tid);
         poolManager.simulateSwap(IHooks(address(router)), address(this), key, p, hookData);
 
@@ -780,7 +796,7 @@ contract RoyaltyRouter_HookIntegration is RoyaltyRouterBase {
         assertEq(BeforeSwapDelta.unwrap(d), BeforeSwapDelta.unwrap(BeforeSwapDeltaLibrary.ZERO_DELTA));
     }
 
-    function test_Hook_ZeroRoyaltyBps_NoDelta() public {
+    function test_Hook_ZeroRoyaltyBps_StillCollectsProtocolFee() public {
         uint256 tid = _registerDesign(BOB, keccak256("zerobps"), 0, address(0));
         uint256 absAmount = 1_000_000;
         // royalty = 0 but protocolFee > 0 ⇒ delta still positive. Check distinctly.
@@ -788,17 +804,19 @@ contract RoyaltyRouter_HookIntegration is RoyaltyRouterBase {
         usdc.mint(address(poolManager), fee);
 
         PoolKey memory key = _defaultPoolKey();
-        SwapParams memory p = _swapParamsUsdcUnspecified(-int256(absAmount));
+        SwapParams memory p = _swapParamsUsdcInput(-int256(absAmount));
         poolManager.simulateSwap(IHooks(address(router)), address(this), key, p, abi.encode(tid));
 
+        // exactInput → delta on specified side.
         BeforeSwapDelta d = poolManager.lastBeforeDelta();
-        assertEq(BeforeSwapDeltaLibrary.getUnspecifiedDelta(d), int128(int256(fee)));
+        assertEq(BeforeSwapDeltaLibrary.getSpecifiedDelta(d), int128(int256(fee)));
+        assertEq(BeforeSwapDeltaLibrary.getUnspecifiedDelta(d), int128(0));
     }
 
     function test_Hook_EmptyHookData_NoDelta() public {
         uint256 absAmount = 1_000_000;
         PoolKey memory key = _defaultPoolKey();
-        SwapParams memory p = _swapParamsUsdcUnspecified(-int256(absAmount));
+        SwapParams memory p = _swapParamsUsdcInput(-int256(absAmount));
         poolManager.simulateSwap(IHooks(address(router)), address(this), key, p, "");
 
         BeforeSwapDelta d = poolManager.lastBeforeDelta();
@@ -809,7 +827,7 @@ contract RoyaltyRouter_HookIntegration is RoyaltyRouterBase {
     function test_Hook_UnregisteredToken_NoDelta() public {
         uint256 absAmount = 1_000_000;
         PoolKey memory key = _defaultPoolKey();
-        SwapParams memory p = _swapParamsUsdcUnspecified(-int256(absAmount));
+        SwapParams memory p = _swapParamsUsdcInput(-int256(absAmount));
         poolManager.simulateSwap(IHooks(address(router)), address(this), key, p, abi.encode(uint256(999_999)));
 
         BeforeSwapDelta d = poolManager.lastBeforeDelta();
@@ -817,13 +835,13 @@ contract RoyaltyRouter_HookIntegration is RoyaltyRouterBase {
     }
 
     function test_Hook_UnsupportedBilledCurrency_NoDelta() public {
-        // Disallow USDC so the billed currency isn't on the allowlist → hook short-circuits.
+        // Disallow USDC so the billed (input) currency isn't on the allowlist → hook short-circuits.
         vm.prank(GOVERNANCE);
         router.setSupportedToken(address(usdc), false);
 
         uint256 absAmount = 1_000_000;
         PoolKey memory key = _defaultPoolKey();
-        SwapParams memory p = _swapParamsUsdcUnspecified(-int256(absAmount));
+        SwapParams memory p = _swapParamsUsdcInput(-int256(absAmount));
         poolManager.simulateSwap(IHooks(address(router)), address(this), key, p, abi.encode(tokenId));
 
         BeforeSwapDelta d = poolManager.lastBeforeDelta();
@@ -833,7 +851,7 @@ contract RoyaltyRouter_HookIntegration is RoyaltyRouterBase {
 
     function test_Hook_AmountZero_NoDelta() public {
         PoolKey memory key = _defaultPoolKey();
-        SwapParams memory p = _swapParamsUsdcUnspecified(0);
+        SwapParams memory p = _swapParamsUsdcInput(0);
         poolManager.simulateSwap(IHooks(address(router)), address(this), key, p, abi.encode(tokenId));
 
         BeforeSwapDelta d = poolManager.lastBeforeDelta();
@@ -843,7 +861,7 @@ contract RoyaltyRouter_HookIntegration is RoyaltyRouterBase {
     function test_Hook_MalformedHookData_NoDelta() public {
         // hookData length != 32 bytes → hook short-circuits without decoding.
         PoolKey memory key = _defaultPoolKey();
-        SwapParams memory p = _swapParamsUsdcUnspecified(-int256(1000));
+        SwapParams memory p = _swapParamsUsdcInput(-int256(1000));
         poolManager.simulateSwap(IHooks(address(router)), address(this), key, p, hex"deadbeef");
 
         BeforeSwapDelta d = poolManager.lastBeforeDelta();
@@ -852,7 +870,7 @@ contract RoyaltyRouter_HookIntegration is RoyaltyRouterBase {
 
     function test_Hook_TokenIdZero_NoDelta() public {
         PoolKey memory key = _defaultPoolKey();
-        SwapParams memory p = _swapParamsUsdcUnspecified(-int256(1000));
+        SwapParams memory p = _swapParamsUsdcInput(-int256(1000));
         poolManager.simulateSwap(IHooks(address(router)), address(this), key, p, abi.encode(uint256(0)));
 
         BeforeSwapDelta d = poolManager.lastBeforeDelta();
@@ -877,7 +895,7 @@ contract RoyaltyRouter_HookIntegration is RoyaltyRouterBase {
         usdc.mint(address(poolManager), royalty + fee);
 
         PoolKey memory key = _defaultPoolKey();
-        SwapParams memory p = _swapParamsUsdcUnspecified(-int256(absAmount));
+        SwapParams memory p = _swapParamsUsdcInput(-int256(absAmount));
         poolManager.simulateSwap(IHooks(address(router)), address(this), key, p, abi.encode(tid));
         assertEq(usdc.balanceOf(fallbackRecipient), royalty, "fallback leg");
 
@@ -973,8 +991,9 @@ contract RoyaltyRouter_HookReentrancy is Test {
             tickSpacing: 60,
             hooks: IHooks(address(router))
         });
+        // Post H-01 fix: use zeroForOne=false so usdc (currency1) is the input (billed) currency.
         SwapParams memory p =
-            SwapParams({ zeroForOne: true, amountSpecified: -int256(absAmount), sqrtPriceLimitX96: 0 });
+            SwapParams({ zeroForOne: false, amountSpecified: -int256(absAmount), sqrtPriceLimitX96: 0 });
 
         poolManager.simulateSwap(IHooks(address(router)), address(this), key, p, abi.encode(tokenId));
 
@@ -1015,7 +1034,7 @@ contract RoyaltyRouter_Gas is RoyaltyRouterBase {
         usdc.mint(address(poolManager), royalty + fee);
 
         PoolKey memory key = _defaultPoolKey();
-        SwapParams memory p = _swapParamsUsdcUnspecified(-int256(absAmount));
+        SwapParams memory p = _swapParamsUsdcInput(-int256(absAmount));
         poolManager.simulateSwap(IHooks(address(router)), address(this), key, p, abi.encode(tokenId));
     }
 }

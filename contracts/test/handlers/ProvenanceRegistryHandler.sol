@@ -170,6 +170,7 @@ contract ProvenanceRegistryHandler is CommonBase, StdCheats, StdUtils {
 
         _saltCounter++;
         SeqoraTypes.WetLabAttestation memory att = SeqoraTypes.WetLabAttestation({
+            tokenId: tokenId,
             oracle: orc,
             vendor: "V",
             orderRef: "O",

@@ -46,6 +46,13 @@ interface IProvenanceRegistry {
     /// @param recordHash The duplicated record hash.
     error DuplicateProvenance(uint256 tokenId, bytes32 recordHash);
 
+    /// @notice Thrown by `recordWetLabAttestation` when the signed `attestation.tokenId`
+    ///         does not match the on-chain `tokenId` argument. Closes cross-tokenId
+    ///         signature replay on wet-lab oracle signatures.
+    /// @param expected The `tokenId` argument the submitter passed.
+    /// @param actual The `attestation.tokenId` field the oracle signed.
+    error TokenIdMismatch(uint256 expected, uint256 actual);
+
     // -------------------------------------------------------------------------
     // Submissions
     // -------------------------------------------------------------------------

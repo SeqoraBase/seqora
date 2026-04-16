@@ -151,6 +151,14 @@ contract BiosafetyCourt is
     /// @notice Thrown when unstake is attempted without first calling `requestUnstake`.
     error UnstakeNotRequested();
 
+    /// @notice Thrown when a reviewer attempts to move a bond that is locked against open disputes.
+    /// @dev Sec-audit BiosafetyCourt H-02 2026-04-16. Open disputes keep
+    ///      `DISPUTE_BOND * openDisputeCount[reviewer]` wei of the bond locked so the reviewer
+    ///      cannot `requestUnstake` / `unstakeReviewer` out from under a pending slash.
+    /// @param available The reviewer's total current bond.
+    /// @param locked The amount locked against open disputes.
+    error StakeLocked(uint128 available, uint128 locked);
+
     /// @notice Thrown when `raiseDispute` is attempted by a caller with insufficient live stake.
     error NotActiveReviewer(address caller);
 
@@ -255,11 +263,20 @@ contract BiosafetyCourt is
     ///      the owner via `withdrawTreasury`.
     uint128 public treasuryAccrued;
 
-    /// @dev UUPS storage reservation — 48 slots keeps total reserved at 50 (2 implicit parent
-    ///      slots + storage above here via ERC-7201 namespacing do NOT consume these slots).
-    ///      Per LicenseRegistry audit storage-layout section: 9 declared slots above → gap 41
-    ///      would land at 50. Using 48 reserves 57 total — defensive extra room.
-    uint256[48] private __gap;
+    /// @dev Accrued reviewer-cut owed to the owner/arbitrator in v1. Pulled via
+    ///      `withdrawReviewerCut`. Moved BEFORE `__gap` per sec-audit H-03 (2026-04-16) to
+    ///      maintain upgrade-safe append ordering.
+    uint128 internal _reviewerCutAccrued;
+
+    /// @dev Per-reviewer cumulative `DISPUTE_BOND` locked against open disputes they have
+    ///      raised. Incremented on `raiseDispute`, decremented on all terminal `resolveDispute`
+    ///      outcomes. Guards `requestUnstake` / `unstakeReviewer` so a reviewer cannot exit
+    ///      while their bond collateralizes a pending slash (sec-audit H-02 2026-04-16).
+    mapping(address => uint128) private _disputeBondLocked;
+
+    /// @dev UUPS storage reservation. Layout: 12 declared slots above + 46 gap = 58 total.
+    ///      Pre-deployment so the slot layout has not yet been committed to any proxy.
+    uint256[46] private __gap;
 
     // -------------------------------------------------------------------------
     // Constructor / initializer
@@ -366,9 +383,14 @@ contract BiosafetyCourt is
     /// @dev Records the unstake request timestamp; actual withdrawal must wait
     ///      `REVIEWER_UNSTAKE_COOLDOWN`. The reviewer is still considered "active" during the
     ///      cooldown for the purposes of `raiseDispute` resolution — slashing still applies.
+    ///      Reverts `StakeLocked` if the reviewer has dispute bond locked against open cases
+    ///      (sec-audit H-02 2026-04-16).
     function requestUnstake() external override {
         SeqoraTypes.ReviewerStake storage s = _stakes[msg.sender];
         if (s.bond == 0) revert StakeTooLow(0, SeqoraTypes.MIN_REVIEWER_STAKE);
+        // Block unstake if any dispute bond is locked against this reviewer's open cases.
+        uint128 locked = _disputeBondLocked[msg.sender];
+        if (locked > 0) revert StakeLocked(s.bond, locked);
         // Idempotent — if a request is already open, emit again but keep the original timestamp.
         if (s.unstakeRequestedAt == 0) s.unstakeRequestedAt = uint64(block.timestamp);
         emit ReviewerUnstakeRequested(msg.sender, s.unstakeRequestedAt);
@@ -376,11 +398,16 @@ contract BiosafetyCourt is
 
     /// @inheritdoc IBiosafetyCourt
     /// @dev Withdraws the full bond after the cooldown. Partial withdrawals are v2. Reverts
-    ///      if `requestUnstake` was not called or the cooldown is not yet elapsed.
+    ///      if `requestUnstake` was not called, cooldown is not elapsed, or dispute bond is
+    ///      locked (sec-audit H-02 2026-04-16).
     function unstakeReviewer() external override nonReentrant returns (uint128 amount) {
         SeqoraTypes.ReviewerStake storage s = _stakes[msg.sender];
         if (s.bond == 0) revert StakeTooLow(0, SeqoraTypes.MIN_REVIEWER_STAKE);
         if (s.unstakeRequestedAt == 0) revert UnstakeNotRequested();
+        // Double-check locked bond at withdrawal time — a dispute may have been raised between
+        // `requestUnstake` and this call (sec-audit H-02 2026-04-16).
+        uint128 locked = _disputeBondLocked[msg.sender];
+        if (locked > 0) revert StakeLocked(s.bond, locked);
 
         uint64 availableAt = s.unstakeRequestedAt + SeqoraTypes.REVIEWER_UNSTAKE_COOLDOWN;
         if (block.timestamp < availableAt) revert CooldownNotElapsed(availableAt);
@@ -451,6 +478,10 @@ contract BiosafetyCourt is
 
         openDisputeOf[tokenId] = caseId;
 
+        // Lock DISPUTE_BOND from the raiser's stake so they cannot unstake while this
+        // dispute is pending (sec-audit H-02 2026-04-16).
+        _disputeBondLocked[msg.sender] += SeqoraTypes.DISPUTE_BOND;
+
         emit DisputeRaised(caseId, tokenId, msg.sender, evidenceHash);
     }
 
@@ -492,6 +523,10 @@ contract BiosafetyCourt is
         d.outcome = outcome;
         openDisputeOf[d.tokenId] = 0;
 
+        // Release the locked dispute bond for the raiser (sec-audit H-02 2026-04-16).
+        // All terminal outcomes — UpheldTakedown, Dismissed, Settled — free the lock.
+        _disputeBondLocked[d.raiser] -= SeqoraTypes.DISPUTE_BOND;
+
         uint128 disputerReward = 0;
         uint128 treasuryCut = 0;
         uint128 reviewerCut = 0;
@@ -499,6 +534,12 @@ contract BiosafetyCourt is
         SeqoraTypes.ReviewerStake storage raiserStake = _stakes[d.raiser];
 
         if (outcome == SeqoraTypes.DisputeOutcome.UpheldTakedown) {
+            // Pre-check: bail if the tokenId is already frozen via a concurrent Safety Council
+            // action. Without this guard `_setFreezeActive` overwrites the existing freeze
+            // record (resetting `appliedAt` / `expiresAt`), which could extend or shorten the
+            // 30-day ratification window depending on timing (sec-audit H-01 2026-04-16).
+            (bool alreadyFrozen,) = _isFrozen(d.tokenId);
+            if (alreadyFrozen) revert FreezeAlreadyActive(d.tokenId);
             // Apply a freeze (same state machine the Safety Council uses).
             _setFreezeActive(d.tokenId, d.reason);
             // Disputer keeps their earmarked bond. (Slash pool is zero in v1 — no adverse
@@ -676,23 +717,6 @@ contract BiosafetyCourt is
     function renounceOwnership() public view override(OwnableUpgradeable) onlyOwner {
         revert RenounceDisabled();
     }
-
-    // -------------------------------------------------------------------------
-    // Additional reviewer-cut accrual (separate slot appended — NOT in __gap)
-    // -------------------------------------------------------------------------
-
-    /// @dev Accrued reviewer-cut owed to the owner/arbitrator in v1. Pulled via
-    ///      `withdrawReviewerCut`. Declared AFTER the `__gap` to keep the gap's slot layout
-    ///      stable — but this means total reserved = 48 + this one field. Fine; still leaves
-    ///      headroom inside the implicit 50-slot budget that LicenseRegistry uses as its
-    ///      convention.
-    ///
-    ///      NOTE on ordering: in strict OZ upgrade-safety practice all new state MUST go
-    ///      BEFORE the gap. We're keeping the gap-before-field placement because the gap
-    ///      was sized 48 specifically to accommodate 2 post-gap fields without an SSTORE
-    ///      move; see `treasuryAccrued` precedent. A v2 impl swap SHOULD migrate this field
-    ///      above the gap as part of a broader slot-layout cleanup.
-    uint128 internal _reviewerCutAccrued;
 
     // -------------------------------------------------------------------------
     // UUPS

@@ -85,8 +85,13 @@ abstract contract ProvHarness is BaseTest {
         });
     }
 
-    function _att(address oracle_, bytes32 salt) internal view returns (SeqoraTypes.WetLabAttestation memory att) {
+    function _att(uint256 tokenId_, address oracle_, bytes32 salt)
+        internal
+        view
+        returns (SeqoraTypes.WetLabAttestation memory att)
+    {
         att = SeqoraTypes.WetLabAttestation({
+            tokenId: tokenId_,
             oracle: oracle_,
             vendor: "Twist Bioscience",
             orderRef: "TW-0001",
@@ -118,7 +123,7 @@ contract ProvenanceRegistry_Constructor_Test is ProvHarness {
         assertEq(
             provenance.WET_LAB_ATTESTATION_TYPEHASH(),
             keccak256(
-                "WetLabAttestation(address oracle,string vendor,string orderRef,uint64 synthesizedAt,bytes32 payloadHash)"
+                "WetLabAttestation(uint256 tokenId,address oracle,string vendor,string orderRef,uint64 synthesizedAt,bytes32 payloadHash)"
             ),
             "WET_LAB_ATTESTATION_TYPEHASH"
         );
@@ -294,7 +299,7 @@ contract ProvenanceRegistry_RecordWetLab_Test is ProvHarness {
     using ProvenanceSigning for ProvenanceRegistry;
 
     function test_RecordWetLab_Happy_StoresAndEmits() public {
-        SeqoraTypes.WetLabAttestation memory att = _att(oracle, keccak256("wl-1"));
+        SeqoraTypes.WetLabAttestation memory att = _att(TOKEN_A, oracle, keccak256("wl-1"));
         bytes memory sig = ProvenanceSigning.signWetLabAttestation(ORACLE_PK, att, provenance);
         bytes32 digest = provenance.wetLabDigest(att);
 
@@ -312,7 +317,7 @@ contract ProvenanceRegistry_RecordWetLab_Test is ProvHarness {
     }
 
     function test_RecordWetLab_RevertsWhen_ZeroOracle() public {
-        SeqoraTypes.WetLabAttestation memory att = _att(address(0), keccak256("wl-zero"));
+        SeqoraTypes.WetLabAttestation memory att = _att(TOKEN_A, address(0), keccak256("wl-zero"));
         bytes memory sig = ProvenanceSigning.signWetLabAttestation(ORACLE_PK, att, provenance);
         vm.expectRevert(SeqoraErrors.ZeroAddress.selector);
         provenance.recordWetLabAttestation(TOKEN_A, att, sig);
@@ -321,7 +326,7 @@ contract ProvenanceRegistry_RecordWetLab_Test is ProvHarness {
     function test_RecordWetLab_RevertsWhen_OracleNotApproved() public {
         uint256 rougePk = 0xBADBAD;
         address rogue = vm.addr(rougePk);
-        SeqoraTypes.WetLabAttestation memory att = _att(rogue, keccak256("wl-rogue"));
+        SeqoraTypes.WetLabAttestation memory att = _att(TOKEN_A, rogue, keccak256("wl-rogue"));
         bytes memory sig = ProvenanceSigning.signWetLabAttestation(rougePk, att, provenance);
         vm.expectRevert(abi.encodeWithSelector(IProvenanceRegistry.OracleNotApproved.selector, rogue));
         provenance.recordWetLabAttestation(TOKEN_A, att, sig);
@@ -330,14 +335,14 @@ contract ProvenanceRegistry_RecordWetLab_Test is ProvHarness {
     function test_RecordWetLab_AfterRevoke_FreshAttestationReverts() public {
         // Record one valid attestation, then revoke the oracle, then verify a NEW attestation
         // by the same oracle reverts OracleNotApproved.
-        SeqoraTypes.WetLabAttestation memory a1 = _att(oracle, keccak256("wl-first"));
+        SeqoraTypes.WetLabAttestation memory a1 = _att(TOKEN_A, oracle, keccak256("wl-first"));
         bytes memory s1 = ProvenanceSigning.signWetLabAttestation(ORACLE_PK, a1, provenance);
         provenance.recordWetLabAttestation(TOKEN_A, a1, s1);
 
         vm.prank(OWNER);
         provenance.revokeOracle(oracle);
 
-        SeqoraTypes.WetLabAttestation memory a2 = _att(oracle, keccak256("wl-after-revoke"));
+        SeqoraTypes.WetLabAttestation memory a2 = _att(TOKEN_A, oracle, keccak256("wl-after-revoke"));
         bytes memory s2 = ProvenanceSigning.signWetLabAttestation(ORACLE_PK, a2, provenance);
         vm.expectRevert(abi.encodeWithSelector(IProvenanceRegistry.OracleNotApproved.selector, oracle));
         provenance.recordWetLabAttestation(TOKEN_A, a2, s2);
@@ -345,14 +350,14 @@ contract ProvenanceRegistry_RecordWetLab_Test is ProvHarness {
 
     function test_RecordWetLab_RevertsWhen_UnknownToken() public {
         uint256 unknownId = uint256(keccak256("unknown-token"));
-        SeqoraTypes.WetLabAttestation memory att = _att(oracle, keccak256("wl-unknown"));
+        SeqoraTypes.WetLabAttestation memory att = _att(unknownId, oracle, keccak256("wl-unknown"));
         bytes memory sig = ProvenanceSigning.signWetLabAttestation(ORACLE_PK, att, provenance);
         vm.expectRevert(abi.encodeWithSelector(SeqoraErrors.UnknownToken.selector, unknownId));
         provenance.recordWetLabAttestation(unknownId, att, sig);
     }
 
     function test_RecordWetLab_RevertsWhen_SignatureMismatch() public {
-        SeqoraTypes.WetLabAttestation memory att = _att(oracle, keccak256("wl-mismatch"));
+        SeqoraTypes.WetLabAttestation memory att = _att(TOKEN_A, oracle, keccak256("wl-mismatch"));
         // Sign with oracle2's key but leave att.oracle = oracle1 (approved). Oracle approval
         // check passes (oracle1 is approved); signature recovery fails (recovers to oracle2).
         bytes memory badSig = ProvenanceSigning.signWetLabAttestation(ORACLE2_PK, att, provenance);
@@ -361,7 +366,7 @@ contract ProvenanceRegistry_RecordWetLab_Test is ProvHarness {
     }
 
     function test_RecordWetLab_RevertsWhen_Paused() public {
-        SeqoraTypes.WetLabAttestation memory att = _att(oracle, keccak256("wl-paused"));
+        SeqoraTypes.WetLabAttestation memory att = _att(TOKEN_A, oracle, keccak256("wl-paused"));
         bytes memory sig = ProvenanceSigning.signWetLabAttestation(ORACLE_PK, att, provenance);
         vm.prank(OWNER);
         provenance.pause();
@@ -370,7 +375,7 @@ contract ProvenanceRegistry_RecordWetLab_Test is ProvHarness {
     }
 
     function test_RecordWetLab_Replay_SameTokenId_Reverts() public {
-        SeqoraTypes.WetLabAttestation memory att = _att(oracle, keccak256("wl-replay"));
+        SeqoraTypes.WetLabAttestation memory att = _att(TOKEN_A, oracle, keccak256("wl-replay"));
         bytes memory sig = ProvenanceSigning.signWetLabAttestation(ORACLE_PK, att, provenance);
         bytes32 digest = provenance.wetLabDigest(att);
 
@@ -379,33 +384,35 @@ contract ProvenanceRegistry_RecordWetLab_Test is ProvHarness {
         provenance.recordWetLabAttestation(TOKEN_A, att, sig);
     }
 
-    /// @notice CRITICAL test per tester brief: `WetLabAttestation` struct has no `tokenId` field,
-    ///         so a single signed attestation can be submitted against ANY tokenId. This is the
-    ///         contract's documented behavior (threat-model §1) — intentional so the same receipt
-    ///         can attach to fork children.
-    ///
-    ///         Verdict documented inline: contract leaves cross-tokenId replay OPEN. A single
-    ///         oracle signature can land on multiple tokenIds. The only defense is per-tokenId
-    ///         dedup via `_seenRecord[tokenId][recordHash]`, which is scoped to one tokenId.
-    function test_RecordWetLab_CrossTokenId_ReplayLandsOnBothTokens() public {
+    /// @notice Cross-tokenId replay is now CLOSED. `WetLabAttestation.tokenId` is a signed field
+    ///         and must match the `tokenId` argument of `recordWetLabAttestation`. An attestation
+    ///         signed for TOKEN_A reverts `TokenIdMismatch` when submitted against tokenB.
+    function test_RecordWetLab_CrossTokenId_ReplayRevertsTokenIdMismatch() public {
         uint256 tokenB = _registerGenesis(BOB, keccak256("genesis-B"));
-        SeqoraTypes.WetLabAttestation memory att = _att(oracle, keccak256("wl-cross"));
+        SeqoraTypes.WetLabAttestation memory att = _att(TOKEN_A, oracle, keccak256("wl-cross"));
         bytes memory sig = ProvenanceSigning.signWetLabAttestation(ORACLE_PK, att, provenance);
-        bytes32 digest = provenance.wetLabDigest(att);
 
-        // First: land on TOKEN_A.
+        // First: land on TOKEN_A (matching tokenId) — succeeds.
         provenance.recordWetLabAttestation(TOKEN_A, att, sig);
-        // Second: same signed blob lands on tokenB — proves cross-tokenId replay is possible.
-        provenance.recordWetLabAttestation(tokenB, att, sig);
+        assertTrue(provenance.isRecordValid(TOKEN_A, provenance.wetLabDigest(att)), "A: valid");
 
-        assertTrue(provenance.isRecordValid(TOKEN_A, digest), "A: valid");
-        assertTrue(provenance.isRecordValid(tokenB, digest), "B: valid");
-        assertEq(provenance.getRecordCount(TOKEN_A), 1);
-        assertEq(provenance.getRecordCount(tokenB), 1);
+        // Second: attempt on tokenB — reverts because att.tokenId == TOKEN_A != tokenB.
+        vm.expectRevert(abi.encodeWithSelector(IProvenanceRegistry.TokenIdMismatch.selector, tokenB, TOKEN_A));
+        provenance.recordWetLabAttestation(tokenB, att, sig);
+    }
+
+    /// @notice Unit test: construct attestation with tokenId=A, call recordWetLabAttestation(B, att, sig),
+    ///         assert TokenIdMismatch(B, A) revert.
+    function test_RecordWetLab_TokenIdMismatch_Reverts() public {
+        uint256 tokenB = _registerGenesis(BOB, keccak256("genesis-mismatch"));
+        SeqoraTypes.WetLabAttestation memory att = _att(TOKEN_A, oracle, keccak256("wl-mismatch-tid"));
+        bytes memory sig = ProvenanceSigning.signWetLabAttestation(ORACLE_PK, att, provenance);
+        vm.expectRevert(abi.encodeWithSelector(IProvenanceRegistry.TokenIdMismatch.selector, tokenB, TOKEN_A));
+        provenance.recordWetLabAttestation(tokenB, att, sig);
     }
 
     function test_RecordWetLab_BadSignatureLength_Reverts() public {
-        SeqoraTypes.WetLabAttestation memory att = _att(oracle, keccak256("wl-badlen"));
+        SeqoraTypes.WetLabAttestation memory att = _att(TOKEN_A, oracle, keccak256("wl-badlen"));
         bytes memory shortSig = hex"deadbeef";
         vm.expectRevert(abi.encodeWithSelector(ECDSA.ECDSAInvalidSignatureLength.selector, 4));
         provenance.recordWetLabAttestation(TOKEN_A, att, shortSig);
@@ -876,7 +883,12 @@ contract ProvenanceRegistry_Fuzz_Test is ProvHarness {
         provenance.registerOracle(orc);
 
         SeqoraTypes.WetLabAttestation memory att = SeqoraTypes.WetLabAttestation({
-            oracle: orc, vendor: "V", orderRef: "O", synthesizedAt: synthesizedAt, payloadHash: payloadHash
+            tokenId: TOKEN_A,
+            oracle: orc,
+            vendor: "V",
+            orderRef: "O",
+            synthesizedAt: synthesizedAt,
+            payloadHash: payloadHash
         });
         bytes memory sig = ProvenanceSigning.signWetLabAttestation(pk, att, provenance);
         bytes32 digest = provenance.wetLabDigest(att);
@@ -923,14 +935,13 @@ contract ProvenanceRegistry_Fuzz_Test is ProvHarness {
     }
 
     /// forge-config: default.fuzz.runs = 128
-    /// @notice Fuzz confirms cross-tokenId replay behavior: a signed attestation can be landed
-    ///         against any pair of distinct tokenIds, documenting the contract's open policy.
-    function testFuzz_CrossTokenIdReplay(bytes32 saltA, bytes32 saltB) public {
+    /// @notice Fuzz confirms cross-tokenId replay is CLOSED. An attestation signed for idA
+    ///         reverts `TokenIdMismatch` when submitted against idB (sec-audit H-01 fix).
+    function testFuzz_CrossTokenIdReplay_RevertsTokenIdMismatch(bytes32 saltA, bytes32 saltB) public {
         // Derive two distinct canonical hashes from user-supplied salts.
         vm.assume(saltA != saltB);
         vm.assume(saltA != bytes32(0));
         vm.assume(saltB != bytes32(0));
-        // Use different-shaped canonical hashes from the existing TOKEN_A.
         bytes32 hashA = keccak256(abi.encode("fuzzA", saltA));
         bytes32 hashB = keccak256(abi.encode("fuzzB", saltB));
         vm.assume(hashA != hashB);
@@ -938,14 +949,17 @@ contract ProvenanceRegistry_Fuzz_Test is ProvHarness {
         uint256 idA = _registerGenesis(ALICE, hashA);
         uint256 idB = _registerGenesis(BOB, hashB);
 
-        SeqoraTypes.WetLabAttestation memory att = _att(oracle, keccak256(abi.encode(saltA, saltB)));
+        // Attestation is signed for idA.
+        SeqoraTypes.WetLabAttestation memory att = _att(idA, oracle, keccak256(abi.encode(saltA, saltB)));
         bytes memory sig = ProvenanceSigning.signWetLabAttestation(ORACLE_PK, att, provenance);
         bytes32 digest = provenance.wetLabDigest(att);
 
-        // Lands on both tokenIds — cross-tokenId replay is OPEN by design.
+        // Lands on idA — matching tokenId.
         provenance.recordWetLabAttestation(idA, att, sig);
-        provenance.recordWetLabAttestation(idB, att, sig);
         assertTrue(provenance.isRecordValid(idA, digest));
-        assertTrue(provenance.isRecordValid(idB, digest));
+
+        // Attempt on idB — reverts because att.tokenId == idA != idB.
+        vm.expectRevert(abi.encodeWithSelector(IProvenanceRegistry.TokenIdMismatch.selector, idB, idA));
+        provenance.recordWetLabAttestation(idB, att, sig);
     }
 }

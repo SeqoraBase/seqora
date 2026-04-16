@@ -25,10 +25,16 @@ pragma solidity ^0.8.24;
 //
 // Threat model notes for sec-auditor
 // ----------------------------------
-//   1. EIP-712 replay across tokenIds — per-tokenId `_seenRecord[tokenId][recordHash]` dedup
-//      prevents replay of the SAME canonical payload against the SAME tokenId. A payload
-//      CAN be recorded against different tokenIds; that's intentional (same ModelCard may
-//      author multiple designs) — off-chain consumers index by `(tokenId, recordHash)`.
+//   1. EIP-712 replay across tokenIds —
+//      (a) ModelCard: a payload CAN be recorded against different tokenIds by design (the
+//          same ModelCard may author multiple derivative sequences). Per-tokenId
+//          `_seenRecord[tokenId][recordHash]` dedup prevents replay of the same payload
+//          against the same tokenId; off-chain consumers index by `(tokenId, recordHash)`.
+//      (b) WetLabAttestation: cross-tokenId replay is CLOSED. `WetLabAttestation.tokenId`
+//          is the FIRST signed field of the EIP-712 payload and MUST equal the on-chain
+//          `tokenId` argument — a mismatch reverts `TokenIdMismatch(expected, actual)`.
+//          A signature captured for design A cannot be submitted against design B
+//          because the oracle signed exactly one tokenId (sec-audit H-01 2026-04-16).
 //   2. EIP-712 replay across chains — domain separator bakes in `block.chainid` + this
 //      contract's address via OZ `EIP712`. A signature for Base mainnet will not verify on
 //      Base Sepolia or any fork.
@@ -75,6 +81,10 @@ contract ProvenanceRegistry is IProvenanceRegistry, Ownable2Step, Pausable, Reen
     /// @param recordHash The record hash not found under `tokenId`.
     error UnknownRecord(uint256 tokenId, bytes32 recordHash);
 
+    // `TokenIdMismatch(uint256 expected, uint256 actual)` — declared on `IProvenanceRegistry`;
+    // inherited here. Used by `recordWetLabAttestation` to close cross-tokenId replay on
+    // WetLab oracle signatures (sec-audit H-01 2026-04-16).
+
     // -------------------------------------------------------------------------
     // Events (contract-local — submission + oracle events are declared on IProvenanceRegistry)
     // -------------------------------------------------------------------------
@@ -95,8 +105,10 @@ contract ProvenanceRegistry is IProvenanceRegistry, Ownable2Step, Pausable, Reen
     );
 
     /// @notice EIP-712 type hash for `SeqoraTypes.WetLabAttestation` — field order MUST match the struct.
+    /// @dev Note `tokenId` is the first signed field. The on-chain call then asserts that the
+    ///      signed tokenId matches the `tokenId` argument (sec-audit H-01 2026-04-16).
     bytes32 public constant WET_LAB_ATTESTATION_TYPEHASH = keccak256(
-        "WetLabAttestation(address oracle,string vendor,string orderRef,uint64 synthesizedAt,bytes32 payloadHash)"
+        "WetLabAttestation(uint256 tokenId,address oracle,string vendor,string orderRef,uint64 synthesizedAt,bytes32 payloadHash)"
     );
 
     /// @notice Pagination cap on `getRecordsByTokenId`. Callers requesting a larger `limit` are
@@ -182,19 +194,25 @@ contract ProvenanceRegistry is IProvenanceRegistry, Ownable2Step, Pausable, Reen
     /// @inheritdoc IProvenanceRegistry
     /// @dev Verifies EIP-712 signature by `attestation.oracle` and that the oracle is in the
     ///      approved set. `msg.sender` is not restricted (relayer-friendly). Reverts on invalid
-    ///      signature, unapproved oracle, duplicate record, unknown tokenId, pause, or zero oracle.
+    ///      signature, unapproved oracle, duplicate record, unknown tokenId, pause, zero
+    ///      oracle, or `attestation.tokenId != tokenId` (cross-tokenId replay; sec-audit
+    ///      H-01 2026-04-16).
     function recordWetLabAttestation(
         uint256 tokenId,
         SeqoraTypes.WetLabAttestation calldata attestation,
         bytes calldata signature
     ) external whenNotPaused nonReentrant {
         if (attestation.oracle == address(0)) revert SeqoraErrors.ZeroAddress();
+        // Bind the signed payload to THIS tokenId. The oracle signs exactly one tokenId; a
+        // signature captured for design A cannot be replayed against design B.
+        if (attestation.tokenId != tokenId) revert TokenIdMismatch(tokenId, attestation.tokenId);
         if (!_approvedOracle[attestation.oracle]) revert OracleNotApproved(attestation.oracle);
         _requireRegistered(tokenId);
 
         bytes32 structHash = keccak256(
             abi.encode(
                 WET_LAB_ATTESTATION_TYPEHASH,
+                attestation.tokenId,
                 attestation.oracle,
                 keccak256(bytes(attestation.vendor)),
                 keccak256(bytes(attestation.orderRef)),
