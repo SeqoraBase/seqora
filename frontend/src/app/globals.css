@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-base: #0A0B0F;
+  --color-surface: #12131A;
+  --color-surface-hover: #1A1C25;
+  --color-border: #2A2D3A;
+  --color-border-bright: #3A3E4E;
+
+  --color-primary: #00D4AA;
+  --color-primary-hover: #00F0C0;
+  --color-primary-muted: rgba(0, 212, 170, 0.12);
+  --color-primary-glow: rgba(0, 212, 170, 0.25);
+
+  --color-secondary: #7B61FF;
+  --color-secondary-hover: #9580FF;
+  --color-secondary-muted: rgba(123, 97, 255, 0.12);
+
+  --color-accent: #FFB547;
+  --color-accent-hover: #FFC66A;
+
+  --color-danger: #FF5757;
+  --color-danger-muted: rgba(255, 87, 87, 0.12);
+
+  --color-text-primary: #F0F0F5;
+  --color-text-secondary: #8B8FA3;
+  --color-text-tertiary: #5A5E72;
+
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+body {
+  background-color: var(--color-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+}
+
+/* Subtle grid background pattern */
+.bg-grid-pattern {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(0, 212, 170, 0.06) 1px, transparent 0);
+  background-size: 40px 40px;
+}
+
+/* Glass-morphism utility */
+.glass {
+  background-color: rgba(18, 19, 26, 0.6);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--color-border);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-base);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-bright);
+  border-radius: 3px;
+}
