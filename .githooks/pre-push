@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+#
+# Scan all commits being pushed for prohibited author references.
+# Belt-and-suspenders check in case commit-msg hook was bypassed.
+
+ZERO="0000000000000000000000000000000000000000"
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+    if [ "$local_sha" = "$ZERO" ]; then
+        continue
+    fi
+
+    if [ "$remote_sha" = "$ZERO" ]; then
+        range="$local_sha"
+    else
+        range="$remote_sha..$local_sha"
+    fi
+
+    # Check commit messages
+    if git log --format="%B" "$range" 2>/dev/null | grep -qiE '(claude|anthropic)'; then
+        echo "ERROR: Push blocked — commit message contains prohibited author reference."
+        echo "       Rewrite the offending commit(s) before pushing."
+        exit 1
+    fi
+
+    # Check author/committer names and emails
+    if git log --format="%an %ae %cn %ce" "$range" 2>/dev/null | grep -qiE '(claude|anthropic)'; then
+        echo "ERROR: Push blocked — commit author/committer contains prohibited reference."
+        exit 1
+    fi
+done
+
+exit 0
