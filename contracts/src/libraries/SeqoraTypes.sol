@@ -67,13 +67,13 @@ library SeqoraTypes {
     uint64 internal constant SAFETY_COUNCIL_FREEZE_WINDOW = 30 days;
 
     /// @notice Share of a dismissed disputer's bond paid to the resolving reviewer (30%).
-    uint16 internal constant DISMISSAL_REVIEWER_CUT_BPS = 3_000;
+    uint16 internal constant DISMISSAL_REVIEWER_CUT_BPS = 3000;
 
     /// @notice Share of a dismissed disputer's bond sent to the treasury (70%).
-    uint16 internal constant DISMISSAL_TREASURY_CUT_BPS = 7_000;
+    uint16 internal constant DISMISSAL_TREASURY_CUT_BPS = 7000;
 
     /// @notice Share of the slashed-reviewer pool paid to the disputer on upheld outcomes (10%).
-    uint16 internal constant UPHELD_DISPUTER_REWARD_BPS = 1_000;
+    uint16 internal constant UPHELD_DISPUTER_REWARD_BPS = 1000;
 
     // -------------------------------------------------------------------------
     // PIL flag bits (Story Protocol PIL semantics — re-implemented natively on Base)

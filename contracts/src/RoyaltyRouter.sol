@@ -431,7 +431,11 @@ contract RoyaltyRouter is IRoyaltyRouter, IHooks, Ownable2Step, ReentrancyGuard 
         PoolKey calldata key,
         SwapParams calldata params,
         bytes calldata hookData
-    ) external onlyPoolManager returns (bytes4 selector, BeforeSwapDelta delta, uint24 lpFeeOverride) {
+    )
+        external
+        onlyPoolManager
+        returns (bytes4 selector, BeforeSwapDelta delta, uint24 lpFeeOverride)
+    {
         selector = IHooks.beforeSwap.selector;
         lpFeeOverride = 0;
 

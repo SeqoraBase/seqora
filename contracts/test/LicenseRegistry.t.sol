@@ -68,8 +68,7 @@ contract LicenseRegistry_Init_Test is LicenseRegistryHarness {
 
     function test_Initialize_RevertsWhen_ZeroGovernance() public {
         LicenseRegistry freshImpl = new LicenseRegistry();
-        bytes memory data =
-            abi.encodeCall(LicenseRegistry.initialize, (IDesignRegistry(address(designs)), address(0)));
+        bytes memory data = abi.encodeCall(LicenseRegistry.initialize, (IDesignRegistry(address(designs)), address(0)));
         vm.expectRevert(SeqoraErrors.ZeroAddress.selector);
         new ERC1967Proxy(address(freshImpl), data);
     }
@@ -123,9 +122,7 @@ contract LicenseRegistry_Templates_Test is LicenseRegistryHarness {
                 | SeqoraTypes.PIL_EXCLUSIVE | SeqoraTypes.PIL_TRANSFERABLE,
             30
         );
-        _createTemplate(
-            keccak256("T_EXCLUSIVE_TRANSFER"), SeqoraTypes.PIL_EXCLUSIVE | SeqoraTypes.PIL_TRANSFERABLE, 0
-        );
+        _createTemplate(keccak256("T_EXCLUSIVE_TRANSFER"), SeqoraTypes.PIL_EXCLUSIVE | SeqoraTypes.PIL_TRANSFERABLE, 0);
     }
 
     function test_RegisterTemplate_RevertsWhen_NotOwner() public {
@@ -235,12 +232,8 @@ contract LicenseRegistry_Grant_Test is LicenseRegistryHarness {
         designId = _registerDesign(ALICE, keccak256("design-1"));
         _createTemplate(Tmpl.OPEN_MTA, SeqoraTypes.PIL_ATTRIBUTION | SeqoraTypes.PIL_DERIVATIVE, 30);
         _createTemplate(Tmpl.EXCLUSIVE, SeqoraTypes.PIL_EXCLUSIVE, 0);
-        _createTemplate(
-            Tmpl.EXCLUSIVE_TRANSFERABLE, SeqoraTypes.PIL_EXCLUSIVE | SeqoraTypes.PIL_TRANSFERABLE, 0
-        );
-        _createTemplate(
-            Tmpl.COMMERCIAL_TRANSFERABLE, SeqoraTypes.PIL_COMMERCIAL | SeqoraTypes.PIL_TRANSFERABLE, 0
-        );
+        _createTemplate(Tmpl.EXCLUSIVE_TRANSFERABLE, SeqoraTypes.PIL_EXCLUSIVE | SeqoraTypes.PIL_TRANSFERABLE, 0);
+        _createTemplate(Tmpl.COMMERCIAL_TRANSFERABLE, SeqoraTypes.PIL_COMMERCIAL | SeqoraTypes.PIL_TRANSFERABLE, 0);
         _createTemplate(Tmpl.NON_TRANSFERABLE, SeqoraTypes.PIL_ATTRIBUTION, 0);
         _createTemplate(Tmpl.PERPETUAL, SeqoraTypes.PIL_ATTRIBUTION, 0);
     }
@@ -488,9 +481,7 @@ contract LicenseRegistry_Validity_Test is LicenseRegistryHarness {
         super.setUp();
         designId = _registerDesign(ALICE, keccak256("design-valid"));
         _createTemplate(Tmpl.OPEN_MTA, SeqoraTypes.PIL_ATTRIBUTION, 0);
-        _createTemplate(
-            Tmpl.COMMERCIAL_TRANSFERABLE, SeqoraTypes.PIL_COMMERCIAL | SeqoraTypes.PIL_TRANSFERABLE, 0
-        );
+        _createTemplate(Tmpl.COMMERCIAL_TRANSFERABLE, SeqoraTypes.PIL_COMMERCIAL | SeqoraTypes.PIL_TRANSFERABLE, 0);
     }
 
     function test_IsValid_True_Happy() public {
@@ -595,9 +586,7 @@ contract LicenseRegistry_Transfer_Test is LicenseRegistryHarness {
     function setUp() public override {
         super.setUp();
         designId = _registerDesign(ALICE, keccak256("design-xfer"));
-        _createTemplate(
-            Tmpl.COMMERCIAL_TRANSFERABLE, SeqoraTypes.PIL_COMMERCIAL | SeqoraTypes.PIL_TRANSFERABLE, 0
-        );
+        _createTemplate(Tmpl.COMMERCIAL_TRANSFERABLE, SeqoraTypes.PIL_COMMERCIAL | SeqoraTypes.PIL_TRANSFERABLE, 0);
         _createTemplate(Tmpl.NON_TRANSFERABLE, SeqoraTypes.PIL_ATTRIBUTION, 0);
     }
 
@@ -859,9 +848,7 @@ contract LicenseRegistry_CheckLicenseValid_ReverseIndex_Test is LicenseRegistryH
         victimDesign = _registerDesign(ALICE, keccak256("victim-design"));
         otherDesign = _registerDesign(CAROL, keccak256("other-design"));
         _createTemplate(Tmpl.OPEN_MTA, SeqoraTypes.PIL_ATTRIBUTION, 0);
-        _createTemplate(
-            Tmpl.COMMERCIAL_TRANSFERABLE, SeqoraTypes.PIL_COMMERCIAL | SeqoraTypes.PIL_TRANSFERABLE, 0
-        );
+        _createTemplate(Tmpl.COMMERCIAL_TRANSFERABLE, SeqoraTypes.PIL_COMMERCIAL | SeqoraTypes.PIL_TRANSFERABLE, 0);
     }
 
     /// @notice M-01 griefing scenario: mass-grant bogus licenses to throwaway addresses and
@@ -969,9 +956,7 @@ contract LicenseRegistry_Approve_NonTransferable_Test is LicenseRegistryHarness 
         super.setUp();
         designId = _registerDesign(ALICE, keccak256("approve-design"));
         _createTemplate(Tmpl.NON_TRANSFERABLE, SeqoraTypes.PIL_ATTRIBUTION, 0);
-        _createTemplate(
-            Tmpl.COMMERCIAL_TRANSFERABLE, SeqoraTypes.PIL_COMMERCIAL | SeqoraTypes.PIL_TRANSFERABLE, 0
-        );
+        _createTemplate(Tmpl.COMMERCIAL_TRANSFERABLE, SeqoraTypes.PIL_COMMERCIAL | SeqoraTypes.PIL_TRANSFERABLE, 0);
     }
 
     function test_Approve_NonTransferable_Reverts() public {
