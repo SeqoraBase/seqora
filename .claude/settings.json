@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(cd /Users/dennisgoslar/Projects/Seqora:*)",
+      "Bash(forge:*)",
+      "Bash(cast:*)",
+      "Bash(anvil:*)",
+      "Bash(pnpm:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(node:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git init:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir -p:*)",
+      "Bash(tree:*)",
+      "Bash(cat docs/agent-log.md)",
+      "Bash(tail:*)",
+      "Read(//Users/dennisgoslar/Projects/Seqora/**)",
+      "Write(//Users/dennisgoslar/Projects/Seqora/**)",
+      "Edit(//Users/dennisgoslar/Projects/Seqora/**)",
+      "Glob(//Users/dennisgoslar/Projects/Seqora/**)",
+      "Grep(//Users/dennisgoslar/Projects/Seqora/**)"
+    ],
+    "deny": [
+      "Write(//Users/dennisgoslar/Projects/Seqora/docs/plan.md)",
+      "Edit(//Users/dennisgoslar/Projects/Seqora/docs/plan.md)",
+      "Bash(git push:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(rm -rf:*)",
+      "Bash(forge script:* --broadcast:*)"
+    ]
+  }
+}

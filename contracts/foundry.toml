@@ -1,0 +1,68 @@
+# Seqora Foundry config
+# See https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+test = "test"
+script = "script"
+cache_path = "cache"
+
+solc = "0.8.24"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 200
+via_ir = true
+bytecode_hash = "none"
+cbor_metadata = false
+auto_detect_remappings = false
+
+# Warnings surface as info, not fail-the-build
+deny = "never"
+
+# Remappings — resolve "@openzeppelin/..." and "solmate/..." to lib paths.
+# MUST remain inside [profile.default]; a root-level `remappings` gets absorbed into the
+# preceding TOML table (e.g. [fuzz]) and is silently ignored.
+remappings = [
+    "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+    "@openzeppelin/=lib/openzeppelin-contracts/",
+    "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+    "openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/",
+    "solmate/=lib/solmate/src/",
+    "forge-std/=lib/forge-std/src/",
+    "eas-contracts/=lib/eas-contracts/contracts/",
+    "v4-core/=lib/v4-core/src/",
+    "v4-periphery/=lib/v4-periphery/src/",
+    "@uniswap/v4-core/=lib/v4-core/",
+    "permit2/=lib/v4-periphery/lib/permit2/",
+]
+
+# Fuzz + invariant defaults (per scaffolding brief)
+[fuzz]
+runs = 256
+max_test_rejects = 65536
+
+[invariant]
+runs = 64
+depth = 128
+fail_on_revert = false
+call_override = false
+
+# RPC endpoints (filled via env in CI / local dev)
+[rpc_endpoints]
+base = "${BASE_RPC_URL}"
+base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
+
+[etherscan]
+base = { key = "${BASESCAN_API_KEY}", url = "https://api.basescan.org/api" }
+base_sepolia = { key = "${BASESCAN_API_KEY}", url = "https://api-sepolia.basescan.org/api" }
+
+[fmt]
+line_length = 120
+tab_width = 4
+bracket_spacing = true
+int_types = "long"
+quote_style = "double"
+number_underscore = "thousands"
