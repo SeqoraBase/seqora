@@ -78,9 +78,11 @@ contract DeploySeqora is Script {
             type(RoyaltyRouter).creationCode,
             abi.encode(IDesignRegistry(address(designRegistry)), treasury, IPoolManager(POOL_MANAGER), governance)
         );
-        (address routerAddr, bytes32 routerSalt) = _mineSalt(deployer, routerCreationCode, HOOK_FLAGS);
+        // Forge routes inline assembly create2 through the deterministic CREATE2 deployer.
+        address create2Deployer = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
+        (address routerAddr, bytes32 routerSalt) = _mineSalt(create2Deployer, routerCreationCode, HOOK_FLAGS);
         RoyaltyRouter router;
-        assembly {
+        assembly ("memory-safe") {
             router := create2(0, add(routerCreationCode, 0x20), mload(routerCreationCode), routerSalt)
         }
         require(address(router) == routerAddr, "CREATE2 mismatch");
