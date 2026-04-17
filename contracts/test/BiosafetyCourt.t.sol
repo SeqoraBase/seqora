@@ -95,18 +95,16 @@ contract BiosafetyCourt_Init_Test is BiosafetyCourtHarness {
         assertGt(vm.getRecordedLogs().length, 0, "init emits logs");
     }
 
-    function test_Initialize_AllowsCouncilEqualsGovernance_AddressLevel() public {
-        // Contract does NOT enforce council != governance at the address layer; it's an
-        // operational constraint. Document current behavior so a future tightening flips
-        // this test on purpose.
+    function test_Initialize_RevertsWhen_CouncilEqualsGovernance() public {
+        // Dual-key model requires `safetyCouncil != owner()`. M-01 closed the gap at the
+        // contract layer so operator misconfiguration cannot silently collapse the 30-day
+        // ratification guard.
         BiosafetyCourt fresh = new BiosafetyCourt();
         bytes memory data = abi.encodeCall(
             BiosafetyCourt.initialize, (IDesignRegistry(address(designs)), TREASURY, GOVERNANCE, GOVERNANCE)
         );
-        ERC1967Proxy p = new ERC1967Proxy(address(fresh), data);
-        BiosafetyCourt c = BiosafetyCourt(payable(address(p)));
-        assertEq(c.safetyCouncil(), GOVERNANCE);
-        assertEq(c.owner(), GOVERNANCE);
+        vm.expectRevert(BiosafetyCourt.SafetyCouncilMatchesOwner.selector);
+        new ERC1967Proxy(address(fresh), data);
     }
 }
 
@@ -1308,6 +1306,15 @@ contract BiosafetyCourt_Governance_Test is BiosafetyCourtHarness {
         court.setSafetyCouncil(address(0xBABE));
     }
 
+    function test_SetSafetyCouncil_RevertsWhen_NewCouncilEqualsOwner() public {
+        // M-01 invariant: rotating the council onto the owner's address collapses the dual-key
+        // model. The contract must reject the rotation so misconfiguration cannot disable the
+        // 30-day DAO ratification requirement.
+        vm.prank(GOVERNANCE);
+        vm.expectRevert(BiosafetyCourt.SafetyCouncilMatchesOwner.selector);
+        court.setSafetyCouncil(GOVERNANCE);
+    }
+
     // ---- setTreasury ----
 
     function test_SetTreasury_Happy_Emits() public {
@@ -1404,6 +1411,24 @@ contract BiosafetyCourt_Governance_Test is BiosafetyCourtHarness {
         vm.prank(address(0xF00D));
         court.acceptOwnership();
         assertEq(court.owner(), address(0xF00D));
+    }
+
+    function test_Ownable2Step_RevertsOnAccept_WhenPendingOwnerEqualsCouncil() public {
+        // M-01 invariant: the council address cannot become the owner. The initial
+        // `transferOwnership` succeeds (OZ Ownable2Step just parks the pending owner) but the
+        // eventual `acceptOwnership` must revert because `_transferOwnership(newOwner)` fires
+        // the dual-key guard.
+        vm.prank(GOVERNANCE);
+        court.transferOwnership(COUNCIL);
+        assertEq(court.pendingOwner(), COUNCIL, "pending owner parked");
+        assertEq(court.owner(), GOVERNANCE, "owner unchanged");
+
+        vm.prank(COUNCIL);
+        vm.expectRevert(BiosafetyCourt.SafetyCouncilMatchesOwner.selector);
+        court.acceptOwnership();
+
+        assertEq(court.owner(), GOVERNANCE, "owner still governance");
+        assertEq(court.safetyCouncil(), COUNCIL, "council unchanged");
     }
 }
 
