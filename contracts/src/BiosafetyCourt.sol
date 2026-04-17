@@ -189,6 +189,13 @@ contract BiosafetyCourt is
     /// @notice Thrown when `caseId` is out of range.
     error UnknownDispute(uint256 caseId);
 
+    /// @notice Thrown when a configuration would collapse the dual-key model by making
+    ///         `safetyCouncil` equal to `owner()`.
+    /// @dev Blocks three paths: (a) `initialize` with `safetyCouncil_ == governance`,
+    ///      (b) `setSafetyCouncil(next)` with `next == owner()`, and (c) accepting ownership
+    ///      via Ownable2Step when the incoming owner equals the current `safetyCouncil`.
+    error SafetyCouncilMatchesOwner();
+
     // -------------------------------------------------------------------------
     // Impl-only events (interface declares the headline events)
     // -------------------------------------------------------------------------
@@ -303,6 +310,7 @@ contract BiosafetyCourt is
         if (treasury_ == address(0)) revert SeqoraErrors.ZeroAddress();
         if (safetyCouncil_ == address(0)) revert SeqoraErrors.ZeroAddress();
         if (governance == address(0)) revert SeqoraErrors.ZeroAddress();
+        if (safetyCouncil_ == governance) revert SafetyCouncilMatchesOwner();
 
         __Ownable_init(governance);
         __Ownable2Step_init();
@@ -663,6 +671,7 @@ contract BiosafetyCourt is
     /// @param next New council address.
     function setSafetyCouncil(address next) external onlyOwner {
         if (next == address(0)) revert SeqoraErrors.ZeroAddress();
+        if (next == owner()) revert SafetyCouncilMatchesOwner();
         address prev = safetyCouncil;
         safetyCouncil = next;
         emit SafetyCouncilSet(prev, next);
@@ -709,6 +718,16 @@ contract BiosafetyCourt is
     /// @notice Override disables `renounceOwnership` to prevent permanent governance bricking.
     function renounceOwnership() public view override(OwnableUpgradeable) onlyOwner {
         revert RenounceDisabled();
+    }
+
+    /// @dev Override to reject any ownership change that would collapse the dual-key model by
+    ///      making `owner() == safetyCouncil`. Fires on `acceptOwnership` after an Ownable2Step
+    ///      handoff; the initializer path is unaffected because `safetyCouncil` is still zero
+    ///      when `__Ownable_init(governance)` runs (the distinct-address invariant for init is
+    ///      enforced separately in `initialize`).
+    function _transferOwnership(address newOwner) internal override(Ownable2StepUpgradeable) {
+        if (newOwner != address(0) && newOwner == safetyCouncil) revert SafetyCouncilMatchesOwner();
+        super._transferOwnership(newOwner);
     }
 
     // -------------------------------------------------------------------------
