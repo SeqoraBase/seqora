@@ -1,66 +1,236 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------
+   Seqora design tokens
+   - warm off-black, bone foreground, muted biological green accent
+   - three typefaces: serif display (Fraunces), sans body (Geist), mono
+   ------------------------------------------------------------------ */
+
 @theme inline {
-  --color-base: #0A0B0F;
-  --color-surface: #12131A;
-  --color-surface-hover: #1A1C25;
-  --color-border: #2A2D3A;
-  --color-border-bright: #3A3E4E;
+  /* surfaces */
+  --color-bg: #0b0c0a;
+  --color-bg-raised: #131512;
+  --color-bg-elevated: #1a1d19;
+  --color-bg-inverse: #efece6;
 
-  --color-primary: #00D4AA;
-  --color-primary-hover: #00F0C0;
-  --color-primary-muted: rgba(0, 212, 170, 0.12);
-  --color-primary-glow: rgba(0, 212, 170, 0.25);
+  /* foreground */
+  --color-fg: #efece6;
+  --color-fg-muted: #9a9890;
+  --color-fg-subtle: #5f5d57;
+  --color-fg-inverse: #0b0c0a;
 
-  --color-secondary: #7B61FF;
-  --color-secondary-hover: #9580FF;
-  --color-secondary-muted: rgba(123, 97, 255, 0.12);
+  /* lines */
+  --color-line: #262925;
+  --color-line-strong: #3a3e39;
 
-  --color-accent: #FFB547;
-  --color-accent-hover: #FFC66A;
+  /* accent: muted biological green (agar plate, not neon) */
+  --color-accent: #7fb069;
+  --color-accent-hover: #9bc58a;
+  --color-accent-muted: rgba(127, 176, 105, 0.12);
+  --color-accent-glow: rgba(127, 176, 105, 0.28);
 
-  --color-danger: #FF5757;
-  --color-danger-muted: rgba(255, 87, 87, 0.12);
+  /* semantic */
+  --color-danger: #c96a4a;
+  --color-danger-muted: rgba(201, 106, 74, 0.12);
+  --color-warn: #d4a85c;
+  --color-warn-muted: rgba(212, 168, 92, 0.12);
 
-  --color-text-primary: #F0F0F5;
-  --color-text-secondary: #8B8FA3;
-  --color-text-tertiary: #5A5E72;
+  /* typography */
+  --font-serif: var(--font-fraunces);
+  --font-sans: var(--font-geist);
+  --font-mono: var(--font-geist-mono);
 
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-jetbrains-mono);
+  /* type scale — modest, not showy */
+  --text-display: clamp(3rem, 7vw, 5.25rem);
+  --text-h1: clamp(2.25rem, 4.5vw, 3.5rem);
+  --text-h2: clamp(1.75rem, 3vw, 2.25rem);
+  --text-h3: 1.375rem;
+  --text-lead: 1.125rem;
+  --text-body: 1rem;
+  --text-small: 0.875rem;
+  --text-xs: 0.75rem;
+
+  /* radii */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+
+  /* timing */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ------------------------------------------------------------------
+     Legacy aliases — keep /register and /registry functional while
+     the landing is redesigned. Point old tokens at new palette.
+     ------------------------------------------------------------------ */
+  --color-base: var(--color-bg);
+  --color-surface: var(--color-bg-raised);
+  --color-surface-hover: var(--color-bg-elevated);
+  --color-border: var(--color-line);
+  --color-border-bright: var(--color-line-strong);
+
+  --color-primary: var(--color-accent);
+  --color-primary-hover: var(--color-accent-hover);
+  --color-primary-muted: var(--color-accent-muted);
+  --color-primary-glow: var(--color-accent-glow);
+
+  --color-secondary: #8a8d84;
+  --color-secondary-hover: #a3a79c;
+  --color-secondary-muted: rgba(138, 141, 132, 0.12);
+
+  --color-text-primary: var(--color-fg);
+  --color-text-secondary: var(--color-fg-muted);
+  --color-text-tertiary: var(--color-fg-subtle);
+}
+
+/* ------------------------------------------------------------------
+   Base
+   ------------------------------------------------------------------ */
+
+html {
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
 }
 
 body {
-  background-color: var(--color-base);
-  color: var(--color-text-primary);
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: var(--text-body);
+  line-height: 1.6;
+  letter-spacing: -0.005em;
 }
 
-/* Subtle grid background pattern */
-.bg-grid-pattern {
-  background-image:
-    radial-gradient(circle at 1px 1px, rgba(0, 212, 170, 0.06) 1px, transparent 0);
-  background-size: 40px 40px;
+/* ------------------------------------------------------------------
+   Typographic primitives — applied via className, not component.
+   Use sparingly; prefer semantic markup + these classes.
+   ------------------------------------------------------------------ */
+
+.t-display {
+  font-family: var(--font-serif), ui-serif, Georgia, serif;
+  font-size: var(--text-display);
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  font-optical-sizing: auto;
 }
 
-/* Glass-morphism utility */
-.glass {
-  background-color: rgba(18, 19, 26, 0.6);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--color-border);
+.t-h1 {
+  font-family: var(--font-serif), ui-serif, Georgia, serif;
+  font-size: var(--text-h1);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
 }
 
-/* Scrollbar styling */
+.t-h2 {
+  font-family: var(--font-serif), ui-serif, Georgia, serif;
+  font-size: var(--text-h2);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.t-h3 {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: var(--text-h3);
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.t-lead {
+  font-size: var(--text-lead);
+  color: var(--color-fg-muted);
+  line-height: 1.55;
+  max-width: 62ch;
+}
+
+.t-mono,
+code,
+kbd,
+pre {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-feature-settings: "ss01", "cv01";
+}
+
+.t-eyebrow {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-fg-subtle);
+}
+
+/* ------------------------------------------------------------------
+   Utilities
+   ------------------------------------------------------------------ */
+
+.link {
+  color: var(--color-accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 160ms var(--ease-out);
+}
+.link:hover {
+  border-bottom-color: currentColor;
+}
+
+.hairline {
+  border-color: var(--color-line);
+}
+
+.noise {
+  position: relative;
+}
+.noise::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>");
+}
+
+/* Scrollbar — subtle, matches bg */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  height: 8px;
 }
-
 ::-webkit-scrollbar-track {
-  background: var(--color-base);
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-line-strong);
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--color-border-bright);
-  border-radius: 3px;
+/* Selection */
+::selection {
+  background: var(--color-accent-muted);
+  color: var(--color-fg);
+}
+
+/* Anchor scroll margin for sticky nav */
+:where(section[id], h2[id], h3[id]) {
+  scroll-margin-top: 6rem;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

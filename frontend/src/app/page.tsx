@@ -1,22 +1,16 @@
 import Navbar from "@/components/Navbar";
-import Hero from "@/components/Hero";
-import StatsBar from "@/components/StatsBar";
-import HowItWorks from "@/components/HowItWorks";
-import Features from "@/components/Features";
-import Audience from "@/components/Audience";
-import CallToAction from "@/components/CallToAction";
 import Footer from "@/components/Footer";
+import Hero from "@/components/Hero";
+import ContractCards from "@/components/ContractCards";
 
 export default function Home() {
   return (
     <>
       <Navbar />
-      <Hero />
-      <StatsBar />
-      <HowItWorks />
-      <Features />
-      <Audience />
-      <CallToAction />
+      <main className="flex-1">
+        <Hero />
+        <ContractCards />
+      </main>
       <Footer />
     </>
   );
