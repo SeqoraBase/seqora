@@ -22,8 +22,10 @@ build/
 .env
 .env.*
 !.env.example
-!.env.testnet
 !.env.local.example
+
+# Foundry snapshot backups (the live snapshot above is ignored already)
+contracts/.gas-snapshot.old
 
 # OS / editor
 .DS_Store
