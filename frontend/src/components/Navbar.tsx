@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const navLinks = [
   { label: "Registry", href: "/registry" },
@@ -47,7 +46,7 @@ export default function Navbar() {
         </div>
 
         <div className="hidden md:block">
-          <ConnectButton />
+          <appkit-button />
         </div>
 
         <button
@@ -79,7 +78,7 @@ export default function Navbar() {
                   {link.label}
                 </a>
               ))}
-              <ConnectButton />
+              <appkit-button />
             </div>
           </motion.div>
         )}

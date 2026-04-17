@@ -9,8 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@rainbow-me/rainbowkit": "^2.2.10",
+    "@coinbase/wallet-sdk": "^4.3.7",
+    "@reown/appkit": "^1.8.19",
+    "@reown/appkit-adapter-wagmi": "^1.8.19",
     "@tanstack/react-query": "^5.99.0",
+    "@wagmi/core": "^3.4.3",
+    "@walletconnect/ethereum-provider": "^2.23.9",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.8.0",
     "next": "16.2.4",
