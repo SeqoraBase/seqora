@@ -56,7 +56,6 @@ seqora/
 │   └── foundry.toml    Forge configuration
 ├── frontend/           Next.js + wagmi + Farcaster Mini App (coming soon)
 ├── .github/            CI workflows, issue templates, PR template
-├── docs/               Private planning and research (gitignored)
 ├── CONTRIBUTING.md     Contribution guide
 ├── SECURITY.md         Vulnerability disclosure policy
 ├── CODE_OF_CONDUCT.md  Contributor Covenant v2.1
