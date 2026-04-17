@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import { Test } from "forge-std/Test.sol";
+import { Vm } from "forge-std/Vm.sol";
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -805,25 +806,56 @@ contract BiosafetyCourt_ResolveDispute_Test is BiosafetyCourtHarness {
 
     // ---- AUDIT REGRESSION VECTORS ----
 
-    /// @notice Verified: `resolveDispute(UpheldTakedown)` on a tokenId
-    ///         that is already frozen (via Safety Council) now reverts `FreezeAlreadyActive`.
+    /// @notice Verified: `resolveDispute(UpheldTakedown)` on a tokenId that is already frozen
+    ///         (via Safety Council) now resolves cleanly and leaves the pre-existing freeze
+    ///         record intact rather than overwriting or reverting.
     /// @dev    The stale-dispute vector: (1) reviewer opens dispute while tokenId is NOT frozen,
     ///         (2) Safety Council freezes the same tokenId before resolution, (3) governance
-    ///         resolves as UpheldTakedown. The fix guards `_setFreezeActive` with an `_isFrozen`
-    ///         pre-check that reverts `FreezeAlreadyActive(tokenId)`.
-    function test_AuditH01_UpheldOnFrozenToken_Reverts() public {
+    ///         resolves as UpheldTakedown. The fix skips `_setFreezeActive` when the token is
+    ///         already frozen — no `SafetyFreezeApplied` re-emit, no `appliedAt` / `expiresAt`
+    ///         reset, and the dispute itself still closes so the raiser's bond is released.
+    function test_AuditN01_UpheldOnFrozenToken_PreservesExistingFreeze() public {
         // 1. BOB already has an open dispute (CASE_ID) against TOKEN_A from setUp().
-        // 2. Safety Council freezes TOKEN_A while the dispute is open (no guard against this).
+        // 2. Safety Council freezes TOKEN_A while the dispute is open.
         vm.prank(COUNCIL);
         court.safetyCouncilFreeze(TOKEN_A, "council-freeze");
-        (bool frozen,) = court.isFrozen(TOKEN_A);
+        (bool frozen, uint64 expiresAtBefore) = court.isFrozen(TOKEN_A);
         assertTrue(frozen, "TOKEN_A is now council-frozen");
 
-        // 3. Warp past the review window and attempt UpheldTakedown — must revert.
+        // 3. Warp past the review window and resolve as UpheldTakedown. Must succeed.
         _warpPastReviewWindow();
+
+        // Expect `DisputeResolved` but NOT `SafetyFreezeApplied` — the council freeze record
+        // must not be overwritten.
+        vm.recordLogs();
+        vm.expectEmit(true, false, false, true);
+        emit DisputeResolved(CASE_ID, SeqoraTypes.DisputeOutcome.UpheldTakedown);
         vm.prank(GOVERNANCE);
-        vm.expectRevert(abi.encodeWithSelector(BiosafetyCourt.FreezeAlreadyActive.selector, TOKEN_A));
         court.resolveDispute(CASE_ID, SeqoraTypes.DisputeOutcome.UpheldTakedown);
+
+        // Verify `SafetyFreezeApplied` was NOT re-emitted on the UpheldTakedown path.
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        bytes32 freezeTopic = keccak256("SafetyFreezeApplied(uint256,string,uint64)");
+        for (uint256 i = 0; i < logs.length; i++) {
+            assertTrue(
+                logs[i].topics[0] != freezeTopic, "SafetyFreezeApplied must not re-emit when token was already frozen"
+            );
+        }
+
+        // Verify freeze record preserved (same `expiresAt` as the council freeze).
+        (bool stillFrozen, uint64 expiresAtAfter) = court.isFrozen(TOKEN_A);
+        assertTrue(stillFrozen, "TOKEN_A remains frozen after resolution");
+        assertEq(expiresAtAfter, expiresAtBefore, "freeze record untouched by UpheldTakedown");
+
+        // Verify dispute closed with the correct outcome.
+        SeqoraTypes.Dispute memory d = court.getDispute(CASE_ID);
+        assertTrue(d.resolvedAt > 0, "dispute resolved");
+        assertEq(uint8(d.outcome), uint8(SeqoraTypes.DisputeOutcome.UpheldTakedown));
+
+        // Indirect bond-lock proof: `requestUnstake` would revert `StakeLocked` if
+        // `_disputeBondLocked[BOB]` were still non-zero. It must now succeed.
+        vm.prank(BOB);
+        court.requestUnstake();
     }
 
     /// @notice Positive counterpart: `resolveDispute(UpheldTakedown)` still succeeds and freezes
