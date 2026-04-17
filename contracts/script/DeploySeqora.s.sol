@@ -40,8 +40,7 @@ contract DeploySeqora is Script {
     address constant POOL_MANAGER = 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408;
 
     // RoyaltyRouter hook permission bits: beforeSwap | afterSwap | beforeSwapReturnDelta
-    uint160 constant HOOK_FLAGS =
-        Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG;
+    uint160 constant HOOK_FLAGS = Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG;
 
     function run() external {
         uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
@@ -77,9 +76,7 @@ contract DeploySeqora is Script {
         // 4. RoyaltyRouter — CREATE2 salt mining for hook address
         bytes memory routerCreationCode = abi.encodePacked(
             type(RoyaltyRouter).creationCode,
-            abi.encode(
-                IDesignRegistry(address(designRegistry)), treasury, IPoolManager(POOL_MANAGER), governance
-            )
+            abi.encode(IDesignRegistry(address(designRegistry)), treasury, IPoolManager(POOL_MANAGER), governance)
         );
         (address routerAddr, bytes32 routerSalt) = _mineSalt(deployer, routerCreationCode, HOOK_FLAGS);
         RoyaltyRouter router;
@@ -96,8 +93,7 @@ contract DeploySeqora is Script {
         // 6. BiosafetyCourt — UUPS proxy, depends on DesignRegistry
         BiosafetyCourt courtImpl = new BiosafetyCourt();
         bytes memory courtInit = abi.encodeCall(
-            BiosafetyCourt.initialize,
-            (IDesignRegistry(address(designRegistry)), treasury, safetyCouncil, governance)
+            BiosafetyCourt.initialize, (IDesignRegistry(address(designRegistry)), treasury, safetyCouncil, governance)
         );
         ERC1967Proxy courtProxy = new ERC1967Proxy(address(courtImpl), courtInit);
         console2.log("BiosafetyCourt (impl):", address(courtImpl));
