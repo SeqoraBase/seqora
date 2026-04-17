@@ -19,6 +19,7 @@ build/
 .env.*
 !.env.example
 !.env.testnet
+!.env.local.example
 
 # OS / editor
 .DS_Store

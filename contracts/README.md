@@ -24,7 +24,7 @@ git submodule update --init --recursive
 ## Testing
 
 ```bash
-forge test              # all 517 tests
+make test               # or: forge test -vv
 forge test -vvv         # verbose output with traces
 forge test --mt test_X  # run a single test by name
 ```
@@ -32,7 +32,7 @@ forge test --mt test_X  # run a single test by name
 ## Coverage
 
 ```bash
-forge coverage --report summary --ir-minimum
+make coverage           # or: forge coverage --ir-minimum --report summary
 ```
 
 Target: 95% or higher on lines and branches for all production contracts.
@@ -40,8 +40,14 @@ Target: 95% or higher on lines and branches for all production contracts.
 ## Formatting
 
 ```bash
-forge fmt --check       # CI enforces this
-forge fmt               # auto-fix
+make fmt                # auto-fix
+make fmt-check          # CI enforces this
+```
+
+## Gas Snapshots
+
+```bash
+make snapshot           # generates .gas-snapshot
 ```
 
 ## Contract Architecture
@@ -78,7 +84,34 @@ forge fmt               # auto-fix
 
 ## Deployment
 
-Coming soon. Base Sepolia deployment scripts will land in `script/`.
+### Base Sepolia
+
+1. Copy `.env.example` to `.env` and fill in values
+2. Fund the deployer wallet with Base Sepolia ETH
+3. Register the EAS screening schema:
+   ```bash
+   make deploy-schema
+   ```
+4. Copy the schema UID output into `.env` as `SCREENING_SCHEMA_UID`
+5. Deploy all 6 contracts:
+   ```bash
+   make deploy
+   ```
+6. Run post-deploy configuration (register attester, allowlist tokens):
+   ```bash
+   # Add deployed addresses to .env first:
+   # SCREENING_ATTESTATIONS, ROYALTY_ROUTER, LICENSE_REGISTRY, ATTESTER
+   forge script script/ConfigureSeqora.s.sol:ConfigureSeqora \
+     --rpc-url base_sepolia --broadcast -vvvv
+   ```
+
+### Scripts
+
+| Script | Purpose |
+|---|---|
+| `RegisterSchema.s.sol` | Registers the Seqora screening schema on EAS |
+| `DeploySeqora.s.sol` | Deploys all 6 contracts with proxies and CREATE2 mining |
+| `ConfigureSeqora.s.sol` | Post-deploy: register attester, allowlist tokens, wire fee router |
 
 ## Audits
 
