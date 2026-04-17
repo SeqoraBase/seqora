@@ -881,6 +881,7 @@ contract RoyaltyRouter_HookIntegration is RoyaltyRouterBase {
         vm.assume(splitsAddr != address(0) && splitsAddr != address(router) && splitsAddr != address(poolManager));
         vm.assume(splitsAddr != address(registry) && splitsAddr != address(usdc));
         vm.assume(fallbackRecipient != address(0) && fallbackRecipient != splitsAddr);
+        vm.assume(fallbackRecipient != TREASURY);
         // Avoid splitsAddr receiving pre-existing transfers from address(this) in lifecycle.
         vm.assume(splitsAddr.code.length == 0 && fallbackRecipient.code.length == 0);
 
