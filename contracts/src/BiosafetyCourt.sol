@@ -274,8 +274,10 @@ contract BiosafetyCourt is
     ///      while their bond collateralizes a pending slash.
     mapping(address => uint128) private _disputeBondLocked;
 
-    /// @dev UUPS storage reservation. Layout: 12 declared slots above + 46 gap = 58 total.
-    ///      Pre-deployment so the slot layout has not yet been committed to any proxy.
+    /// @dev UUPS storage reservation. Layout: 11 slots above (treasuryAccrued and
+    ///      _reviewerCutAccrued are both `uint128` and pack into a single slot) + 46 gap =
+    ///      57 total. The gap array size is locked post-deployment; future appends must come
+    ///      out of the gap without resizing it.
     uint256[46] private __gap;
 
     // -------------------------------------------------------------------------
@@ -534,13 +536,15 @@ contract BiosafetyCourt is
         uint128 reviewerCut = 0;
 
         if (outcome == SeqoraTypes.DisputeOutcome.UpheldTakedown) {
-            // Pre-check: bail if the tokenId is already frozen via a concurrent Safety Council
-            // action. Without this guard `_setFreezeActive` overwrites the existing freeze
-            // record (resetting `appliedAt` / `expiresAt`), which could extend or shorten the
-            // 30-day ratification window depending on timing.
+            // If the tokenId is already frozen via a concurrent Safety Council action, leave
+            // the existing freeze record intact — overwriting via `_setFreezeActive` would
+            // reset `appliedAt` / `expiresAt` and warp the 30-day ratification window. The
+            // dispute still resolves cleanly so the raiser's bond is released and settlement
+            // proceeds; the pre-existing freeze remains governing for ratification.
             (bool alreadyFrozen,) = _isFrozen(tokenId_);
-            if (alreadyFrozen) revert FreezeAlreadyActive(tokenId_);
-            _setFreezeActive(tokenId_, d.reason);
+            if (!alreadyFrozen) {
+                _setFreezeActive(tokenId_, d.reason);
+            }
             disputerReward = 0;
         } else if (outcome == SeqoraTypes.DisputeOutcome.Dismissed) {
             SeqoraTypes.ReviewerStake storage raiserStake = _stakes[raiser_];
