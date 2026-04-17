@@ -18,6 +18,9 @@ node_modules/
 dist/
 build/
 
+# Generated at prebuild from SPEC.md at repo root — do not hand-edit
+frontend/src/content/spec.md
+
 # Env / secrets
 .env
 .env.*
