@@ -43,11 +43,11 @@ export default function CallToAction() {
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <a
-            href="#"
+            href="/register"
             className="inline-flex items-center justify-center rounded-full bg-primary px-8 py-3 text-base font-semibold transition-all duration-300 hover:bg-primary-hover hover:shadow-lg hover:shadow-primary-glow hover:-translate-y-0.5"
             style={{ color: "#0A0B0F" }}
           >
-            Get Started
+            Register a Design
           </a>
           <a
             href="#"

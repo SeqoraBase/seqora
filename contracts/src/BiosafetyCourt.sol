@@ -450,7 +450,8 @@ contract BiosafetyCourt is
     {
         // --- Reviewer eligibility ---
         SeqoraTypes.ReviewerStake storage s = _stakes[msg.sender];
-        if (s.bond < SeqoraTypes.MIN_REVIEWER_STAKE || s.bond < SeqoraTypes.DISPUTE_BOND) {
+        uint128 bond = s.bond;
+        if (bond < SeqoraTypes.MIN_REVIEWER_STAKE || bond < SeqoraTypes.DISPUTE_BOND) {
             revert NotActiveReviewer(msg.sender);
         }
 

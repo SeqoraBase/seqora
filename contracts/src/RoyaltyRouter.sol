@@ -732,6 +732,7 @@ contract RoyaltyRouter is IRoyaltyRouter, IHooks, Ownable2Step, ReentrancyGuard 
         revert UnsupportedToken(address(0));
     }
 
+    /// @notice Revert on unrecognized function selectors — catches misconfigured v4 callbacks.
     fallback() external payable {
         revert HookMisconfigured();
     }

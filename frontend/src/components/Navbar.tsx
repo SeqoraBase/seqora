@@ -6,10 +6,9 @@ import { Menu, X } from "lucide-react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const navLinks = [
-  { label: "Protocol", href: "#" },
-  { label: "Developers", href: "#" },
-  { label: "Ecosystem", href: "#" },
-  { label: "Docs", href: "#" },
+  { label: "Registry", href: "/registry" },
+  { label: "Register", href: "/register" },
+  { label: "Docs", href: "https://github.com/SeqoraBase/seqora" },
 ];
 
 export default function Navbar() {

@@ -88,14 +88,16 @@ export default function Hero() {
           transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
         >
           <a
-            href="#"
+            href="/registry"
             className="inline-flex items-center justify-center rounded-full bg-primary px-8 py-3 text-base font-semibold transition-all duration-300 hover:bg-primary-hover hover:shadow-lg hover:shadow-primary-glow hover:-translate-y-0.5"
             style={{ color: "#0A0B0F" }}
           >
             Explore Registry
           </a>
           <a
-            href="#"
+            href="https://github.com/SeqoraBase/seqora"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center justify-center rounded-full border border-border px-8 py-3 text-base font-semibold text-text-primary transition-all duration-300 hover:border-border-bright hover:-translate-y-0.5"
           >
             Read Docs
