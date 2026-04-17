@@ -55,7 +55,7 @@ pragma solidity ^0.8.24;
 //   The BiosafetyCourt itself does NOT mutate LicenseRegistry state — the integration is a
 //   pull, not push, so `LicenseRegistry.sol` remains untouched in v1.
 //
-// Discrepancies from task brief (escalated to orchestrator via agent-log)
+// Discrepancies from interface specification
 // -----------------------------------------------------------------------
 //   1. Interface function `stakeAsReviewer(uint128)` is non-payable. See "v1 bond currency"
 //      note above; implemented via `receive()` + `pendingDeposits` accounting.

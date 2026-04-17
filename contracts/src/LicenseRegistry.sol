@@ -63,7 +63,7 @@ pragma solidity ^0.8.24;
 //     3. `IRoyaltyRouter(router).computeSplit(...)` (RoyaltyRouter not in v1 ship scope)
 //   This keeps the registry cheap and keeps fork-graph arithmetic in one place.
 //
-// Discrepancies from task brief (see agent-log entry for orchestrator attention)
+// Discrepancies from interface specification
 // ------------------------------------------------------------------------------
 //   1. Task says "createTemplate(tokenId, LicenseTemplate) callable by the registrant".
 //      Interface declares `registerLicenseTemplate(LicenseTemplate calldata)` with no
@@ -277,7 +277,7 @@ contract LicenseRegistry is
     }
 
     /// @inheritdoc ILicenseRegistry
-    /// @dev Owner-only. Setting `active = false` is the "retire" path from the task brief —
+    /// @dev Owner-only. Setting `active = false` is the "retire" path —
     ///      existing grants on this template survive (validity only reads `_licenses`, not
     ///      template.active); only NEW grants against this template are blocked.
     function setLicenseTemplateActive(bytes32 licenseId, bool active) external onlyOwner {

@@ -14,8 +14,8 @@ pragma solidity ^0.8.24;
 //                                    afterSwap intercept the swap and route the royalty +
 //                                    protocol fee to 0xSplits + treasury.
 //
-// Interface divergence (logged to orchestrator)
-// --------------------------------------------
+// Interface divergence
+// --------------------
 //   IRoyaltyRouter declares `beforeSwap(address,bytes,bytes,bytes) returns (bytes4)` and
 //   `afterSwap(address,bytes,bytes,bytes,bytes) returns (bytes4)`. Those signatures CANNOT
 //   be invoked by the v4 PoolManager — PoolManager uses the canonical Uniswap v4
@@ -25,8 +25,8 @@ pragma solidity ^0.8.24;
 //   the same contract. The IRoyaltyRouter-shaped entrypoints are retained for ABI
 //   compatibility with the interface and are permanently disabled (revert `HookMisconfigured`
 //   to make any accidental call unambiguous). The REAL v4 hook path is the IHooks
-//   implementation. Orchestrator should reconcile the interface vs. the v4 reality in a
-//   follow-up interface-tidy pass (see agent-log).
+//   implementation. The interface should be reconciled with the v4 reality in a
+//   follow-up interface-tidy pass.
 //
 // Hook permission encoding (v4)
 // -----------------------------
