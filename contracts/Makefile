@@ -20,11 +20,11 @@ snapshot:
 
 deploy-schema:
 	source .env && forge script script/RegisterSchema.s.sol:RegisterSchema \
-		--rpc-url base_sepolia --broadcast -vvvv
+		--rpc-url base --broadcast -vvvv
 
 deploy:
 	source .env && forge script script/DeploySeqora.s.sol:DeploySeqora \
-		--rpc-url base_sepolia --broadcast --verify -vvvv
+		--rpc-url base --broadcast --verify -vvvv
 
 clean:
 	forge clean

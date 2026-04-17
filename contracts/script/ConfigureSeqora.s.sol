@@ -12,10 +12,10 @@ import { SeqoraTypes } from "../src/libraries/SeqoraTypes.sol";
 /// @dev Run AFTER DeploySeqora. Fill in deployed addresses below.
 ///
 ///   forge script script/ConfigureSeqora.s.sol:ConfigureSeqora \
-///     --rpc-url base_sepolia --broadcast -vvvv
+///     --rpc-url base --broadcast -vvvv
 contract ConfigureSeqora is Script {
-    // Base Sepolia token addresses
-    address constant USDC = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
+    // Base mainnet token addresses
+    address constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
     address constant WETH = 0x4200000000000000000000000000000000000006;
 
     function run() external {

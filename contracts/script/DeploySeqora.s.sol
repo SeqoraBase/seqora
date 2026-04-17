@@ -17,27 +17,27 @@ import { ProvenanceRegistry } from "../src/ProvenanceRegistry.sol";
 import { BiosafetyCourt } from "../src/BiosafetyCourt.sol";
 
 /// @title DeploySeqora
-/// @notice Deploys all 6 v1 contracts to Base Sepolia in dependency order.
+/// @notice Deploys all 6 v1 contracts to Base mainnet in dependency order.
 /// @dev Usage:
 ///   1. Copy .env.example → .env and fill in values.
 ///   2. forge script script/DeploySeqora.s.sol:DeploySeqora \
-///        --rpc-url base_sepolia --broadcast --verify -vvvv
+///        --rpc-url base --broadcast --verify -vvvv
 ///
 ///   Required env vars:
-///     DEPLOYER_PRIVATE_KEY   — funded Base Sepolia deployer
-///     BASE_SEPOLIA_RPC_URL   — RPC endpoint
-///     BASESCAN_API_KEY       — for contract verification
+///     DEPLOYER_PRIVATE_KEY   — funded Base deployer
+///     BASE_RPC_URL           — RPC endpoint
+///     BASESCAN_API_KEY       — for contract verification (Etherscan API V2)
 ///     SCREENING_SCHEMA_UID   — EAS schema UID (register first via EAS UI)
-///     GOVERNANCE             — governance/owner address (multisig or EOA for testnet)
+///     GOVERNANCE             — governance/owner address (multisig or EOA)
 ///     TREASURY               — treasury recipient
 ///     SAFETY_COUNCIL         — safety council address (BiosafetyCourt dual-key)
 ///     BASE_URI               — ERC-1155 metadata URI template
 contract DeploySeqora is Script {
-    // Base Sepolia canonical addresses
-    // EAS: https://docs.attest.org/docs/quick--start/contracts#base-sepolia
+    // Base mainnet canonical addresses
+    // EAS: https://docs.attest.org/docs/quick--start/contracts#base
     address constant EAS = 0x4200000000000000000000000000000000000021;
-    // PoolManager: confirmed from v4-periphery/broadcast/DeployPosm.s.sol/84532
-    address constant POOL_MANAGER = 0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408;
+    // PoolManager: https://docs.uniswap.org/contracts/v4/concepts/PoolManager
+    address constant POOL_MANAGER = 0x498581fF718922c3f8e6A244956aF099B2652b2b;
 
     // RoyaltyRouter hook permission bits: beforeSwap | afterSwap | beforeSwapReturnDelta
     uint160 constant HOOK_FLAGS = Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG;
@@ -102,7 +102,7 @@ contract DeploySeqora is Script {
         vm.stopBroadcast();
 
         // Summary
-        console2.log("\n--- Deployment Summary (Base Sepolia) ---");
+        console2.log("\n--- Deployment Summary (Base) ---");
         console2.log("ScreeningAttestations :", address(screening));
         console2.log("DesignRegistry        :", address(designRegistry));
         console2.log("LicenseRegistry proxy :", address(licenseProxy));

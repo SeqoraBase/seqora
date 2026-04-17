@@ -84,10 +84,10 @@ make snapshot           # generates .gas-snapshot
 
 ## Deployment
 
-### Base Sepolia
+### Base Mainnet
 
 1. Copy `.env.example` to `.env` and fill in values
-2. Fund the deployer wallet with Base Sepolia ETH
+2. Fund the deployer wallet with ETH on Base
 3. Register the EAS screening schema:
    ```bash
    make deploy-schema
@@ -102,7 +102,7 @@ make snapshot           # generates .gas-snapshot
    # Add deployed addresses to .env first:
    # SCREENING_ATTESTATIONS, ROYALTY_ROUTER, LICENSE_REGISTRY, ATTESTER
    forge script script/ConfigureSeqora.s.sol:ConfigureSeqora \
-     --rpc-url base_sepolia --broadcast -vvvv
+     --rpc-url base --broadcast -vvvv
    ```
 
 ### Scripts

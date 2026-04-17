@@ -7,12 +7,12 @@ import { ISchemaRegistry } from "eas-contracts/ISchemaRegistry.sol";
 import { ISchemaResolver } from "eas-contracts/resolver/ISchemaResolver.sol";
 
 /// @title RegisterSchema
-/// @notice Registers the Seqora screening schema on EAS (Base Sepolia).
+/// @notice Registers the Seqora screening schema on EAS (Base).
 /// @dev Usage:
 ///   forge script script/RegisterSchema.s.sol:RegisterSchema \
-///     --rpc-url base_sepolia --broadcast -vvvv
+///     --rpc-url base --broadcast -vvvv
 ///
-///   Required env: DEPLOYER_PRIVATE_KEY, BASE_SEPOLIA_RPC_URL
+///   Required env: DEPLOYER_PRIVATE_KEY, BASE_RPC_URL
 ///   Output: the schema UID — paste into .env as SCREENING_SCHEMA_UID
 contract RegisterSchema is Script {
     address constant EAS = 0x4200000000000000000000000000000000000021;
