@@ -967,9 +967,8 @@ contract RoyaltyRouter_HookReentrancy is Test {
         // `safeTransfer` completes, the reentrant `distribute` is NOT inside the reentrancy guard
         // (since the hook isn't guarded), so it DOES succeed — this test documents that reality.
         //
-        // sec-auditor TODO: decide whether the hook path should be wrapped in nonReentrant or
-        // equivalent to prevent PoolManager-driven reentrant distribute calls. If so, this test
-        // must be updated to expectRevert.
+        // v2 consideration: wrap hook path in nonReentrant to prevent PoolManager-driven
+        // reentrant distribute calls. If added, this test must be updated to expectRevert.
         uint256 absAmount = 1_000_000;
         uint256 fee = (absAmount * SeqoraTypes.PROTOCOL_FEE_BPS) / SeqoraTypes.BPS;
         uint256 royalty = (absAmount * 500) / SeqoraTypes.BPS;

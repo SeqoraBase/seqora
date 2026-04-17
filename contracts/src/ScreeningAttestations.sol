@@ -28,7 +28,7 @@ pragma solidity ^0.8.24;
 //   The constructor locks in (EAS address, schemaUID); both have a setter restricted to the
 //   owner so the multisig can migrate if EAS itself is redeployed (extremely unlikely on Base).
 //
-// Threat model notes for sec-auditor
+// Threat model
 // ----------------------------------
 //   1. Schema-decode tampering — `abi.decode(attestation.data, (bytes32, address, uint8, uint64,
 //      bytes32))` MUST match the off-chain schema definition exactly. Any drift here silently

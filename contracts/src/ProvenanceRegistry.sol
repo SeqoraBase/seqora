@@ -20,10 +20,10 @@ pragma solidity ^0.8.24;
 //
 // Immutability posture
 // --------------------
-//   Not upgradeable. Per CLAUDE.md only LicenseRegistry + BiosafetyCourt are UUPS. Oracle
+//   Not upgradeable. Per architecture spec, only LicenseRegistry + BiosafetyCourt are UUPS. Oracle
 //   set is mutable via the owner (Seqora multisig); local record revocation likewise.
 //
-// Threat model notes for sec-auditor
+// Threat model
 // ----------------------------------
 //   1. EIP-712 replay across tokenIds —
 //      (a) ModelCard: a payload CAN be recorded against different tokenIds by design (the

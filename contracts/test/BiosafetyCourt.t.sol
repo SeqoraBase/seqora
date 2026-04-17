@@ -805,7 +805,7 @@ contract BiosafetyCourt_ResolveDispute_Test is BiosafetyCourtHarness {
 
     // ---- AUDIT REGRESSION VECTORS ----
 
-    /// @notice sec-auditor H-01 fix verified: `resolveDispute(UpheldTakedown)` on a tokenId
+    /// @notice Verified: `resolveDispute(UpheldTakedown)` on a tokenId
     ///         that is already frozen (via Safety Council) now reverts `FreezeAlreadyActive`.
     /// @dev    The stale-dispute vector: (1) reviewer opens dispute while tokenId is NOT frozen,
     ///         (2) Safety Council freezes the same tokenId before resolution, (3) governance
@@ -841,7 +841,7 @@ contract BiosafetyCourt_ResolveDispute_Test is BiosafetyCourtHarness {
         assertTrue(frozen, "TOKEN_A is now frozen via UpheldTakedown");
     }
 
-    /// @notice sec-auditor H-02 fix verified: A reviewer with an open dispute CANNOT unstake.
+    /// @notice Verified: A reviewer with an open dispute CANNOT unstake.
     ///         `requestUnstake` reverts `StakeLocked` when `_disputeBondLocked[msg.sender] > 0`.
     function test_AuditH02_UnstakeLockedByOpenDispute_Reverts() public {
         // BOB already has an open dispute (CASE_ID) from setUp(). Dispute bond is locked.
@@ -1623,7 +1623,7 @@ contract BiosafetyCourt_UUPS_Test is BiosafetyCourtHarness {
         court.upgradeToAndCall(address(v2), "");
     }
 
-    /// @notice sec-auditor H-03 fix verified: `_reviewerCutAccrued` moved BEFORE `__gap`, packed
+    /// @notice Verified: `_reviewerCutAccrued` moved BEFORE `__gap`, packed
     ///         with `treasuryAccrued` in slot 9 (offset 16). `_disputeBondLocked` at slot 10.
     ///         `__gap[46]` starts at slot 11.
     /// @dev    We write a known non-zero value to `_reviewerCutAccrued` via a Dismissed

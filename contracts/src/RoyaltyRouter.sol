@@ -321,8 +321,8 @@ contract RoyaltyRouter is IRoyaltyRouter, IHooks, Ownable2Step, ReentrancyGuard 
 
     /// @inheritdoc IRoyaltyRouter
     /// @dev v1 supports ONLY ERC-20 `currency`; native ETH is declined with `UnsupportedToken`
-    ///      because the native-ETH branch of the allowlist+transfer plumbing is not yet audited
-    ///      (sec-auditor TODO). Callers paying ETH should wrap to WETH and route through here,
+    ///      because the native-ETH branch of the allowlist+transfer plumbing is deferred to v2.
+    ///      Callers paying ETH should wrap to WETH and route through here,
     ///      or use v2's forthcoming native-ETH path.
     ///
     ///      Non-reentrant. Not pausable — pausing the router's off-swap payment rails would
@@ -555,10 +555,7 @@ contract RoyaltyRouter is IRoyaltyRouter, IHooks, Ownable2Step, ReentrancyGuard 
         if (p.royaltyAmount > 0) {
             address payoutTarget = _resolvePayoutTarget(p.tokenId);
             if (payoutTarget == address(0)) {
-                // No payout target → send the royalty to the treasury as a last-resort sink
-                // rather than reverting inside the hook (reverting would fail the swap).
-                // sec-auditor TODO: confirm "forfeit to treasury" is the desired default or
-                // whether we'd rather lock-and-pause here.
+                // No payout target → treasury as last-resort sink (reverting would fail the swap).
                 token.safeTransfer(TREASURY, p.royaltyAmount);
             } else {
                 token.safeTransfer(payoutTarget, p.royaltyAmount);

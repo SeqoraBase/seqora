@@ -63,7 +63,7 @@ library SeqoraTypes {
 
     /// @notice Window the DAO has to ratify or reject a Safety Council freeze (30 days).
     /// @dev Per plan §3 + §6 #4. Lapsing without ratification auto-lifts via
-    ///      `expireFreeze`, enforcing the "reversible by default" invariant from CLAUDE.md.
+    ///      `expireFreeze`, enforcing the "reversible by default" design invariant.
     uint64 internal constant SAFETY_COUNCIL_FREEZE_WINDOW = 30 days;
 
     /// @notice Share of a dismissed disputer's bond paid to the resolving reviewer (30%).

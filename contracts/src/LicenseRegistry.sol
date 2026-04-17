@@ -14,7 +14,7 @@ pragma solidity ^0.8.24;
 //
 // Upgradeability
 // --------------
-//   UUPS (per CLAUDE.md: "UUPS only for LicenseRegistry + BiosafetyCourt"). Implementation
+//   UUPS (per architecture spec: UUPS only for LicenseRegistry + BiosafetyCourt). Implementation
 //   calls `_disableInitializers()` in the constructor; state lives in the proxy. Upgrade is
 //   `onlyOwner` via `_authorizeUpgrade`.
 //

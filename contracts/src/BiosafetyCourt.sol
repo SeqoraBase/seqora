@@ -24,7 +24,7 @@ pragma solidity ^0.8.24;
 //
 // Upgradeability posture
 // ----------------------
-//   UUPS (per CLAUDE.md: "UUPS only for LicenseRegistry + BiosafetyCourt"). Implementation
+//   UUPS (per architecture spec: UUPS only for LicenseRegistry + BiosafetyCourt). Implementation
 //   calls `_disableInitializers()` in the constructor; state lives in the proxy.
 //   `_authorizeUpgrade` is `onlyOwner`. All OZ v5 upgradeable parents use ERC-7201 namespaced
 //   storage (see LicenseRegistry audit storage-layout section) so child storage slots 0…N-1
@@ -78,7 +78,7 @@ pragma solidity ^0.8.24;
 //      NOT break interface conformance) and ALSO compute auto-lift lazily in `isFrozen` so
 //      reads always reflect the true current state even if no one has called `expireFreeze`.
 //
-// Threat model notes for sec-auditor
+// Threat model
 // ----------------------------------
 //   1. Dual-key collusion — `safetyCouncil` + `owner` controlled by the same entity collapses
 //      the 30-day ratification guard. Plan §6 #4 prescribes a 5-of-9 multisig for the council
@@ -95,7 +95,7 @@ pragma solidity ^0.8.24;
 //      by ANY path; dispute-driven freeze is upgrade-compatible (status == Ratified never
 //      auto-lifts; status == Active auto-lifts). See `_setFreezeActive` invariants.
 //   5. 30-day auto-lift trust — if the DAO simply fails to ratify, the freeze lifts. This is
-//      intentional per CLAUDE.md invariant #4 ("BiosafetyCourt.takedown is reversible").
+//      intentional per design invariant: BiosafetyCourt.takedown is reversible.
 //   6. Reentrancy on ETH transfers — `nonReentrant` + CEI + `call{value}` with success check.
 //      All payouts happen AFTER state mutations.
 //   7. UUPS upgrade safety — `_authorizeUpgrade` is `onlyOwner`; `__gap[48]` reserves 48 slots.
