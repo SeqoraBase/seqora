@@ -18,9 +18,6 @@ jobs:
         with:
           version: stable
 
-      - name: Show forge version
-        run: forge --version
-
       - name: Format check
         working-directory: contracts
         run: forge fmt --check
@@ -32,6 +29,16 @@ jobs:
       - name: Test
         working-directory: contracts
         run: forge test -vv
+
+      - name: Gas snapshot
+        working-directory: contracts
+        run: forge snapshot --snap .gas-snapshot
+
+      - name: Upload gas snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: gas-snapshot
+          path: contracts/.gas-snapshot
 
   coverage:
     name: coverage (informational)
@@ -46,6 +53,33 @@ jobs:
         with:
           version: stable
 
-      - name: Coverage summary
+      - name: Coverage report
         working-directory: contracts
-        run: forge coverage --report summary --ir-minimum --no-match-coverage "(test|script)"
+        run: |
+          forge coverage --ir-minimum --no-match-coverage "(test|script)" --report summary | tee coverage-summary.txt
+          # Extract line coverage percentage and check threshold
+          LINE_COV=$(grep "^| Total" coverage-summary.txt | awk -F'|' '{print $3}' | grep -oP '[\d.]+' | head -1)
+          echo "Line coverage: ${LINE_COV}%"
+          if [ "$(echo "$LINE_COV < 80" | bc -l)" -eq 1 ]; then
+            echo "::warning::Line coverage ${LINE_COV}% is below 80% threshold"
+          fi
+
+  frontend:
+    name: frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        working-directory: frontend
+        run: npm ci --legacy-peer-deps
+
+      - name: Build
+        working-directory: frontend
+        run: npx next build
