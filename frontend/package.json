@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "sync-spec": "node scripts/sync-spec.mjs",
+    "predev": "npm run sync-spec",
+    "prebuild": "npm run sync-spec",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -20,6 +23,8 @@
     "next": "16.2.4",
     "react": "19.2.5",
     "react-dom": "19.2.5",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "viem": "^2.48.0",
     "wagmi": "^3.6.2"
   },
