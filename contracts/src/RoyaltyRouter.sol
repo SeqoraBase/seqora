@@ -50,7 +50,7 @@ pragma solidity ^0.8.24;
 //   exactOutput. Both cases collect in the input currency, which is the only side the
 //   licensee materially commits to. The previous "bill the unspecified side always"
 //   design silently skipped the dominant "buy-LicenseToken-with-USDC" exactInput flow
-//   (unspecified = LicenseToken, not allowlisted) — see sec-audit H-01 2026-04-16.
+//   (unspecified = LicenseToken, not allowlisted).
 //
 //   BeforeSwapDelta encoding:
 //     exactInput  → `toBeforeSwapDelta(+total, 0)` — the hook is OWED `total` in the
@@ -192,8 +192,8 @@ contract RoyaltyRouter is IRoyaltyRouter, IHooks, Ownable2Step, ReentrancyGuard 
     /// @dev Per-tx memo of the amount the hook needs to `take` in `afterSwap`. Lives in
     ///      EIP-1153 transient storage (`tstore`/`tload`) so there is no cross-tx leak and
     ///      no chance of stale state poisoning the next swap if a future v4 version ever
-    ///      skips the afterSwap dispatch after beforeSwap wrote the memo (sec-audit H-02
-    ///      2026-04-16). evm_version is cancun (foundry.toml) so the opcodes are available.
+    ///      skips the afterSwap dispatch after beforeSwap wrote the memo. evm_version is
+    ///      cancun (foundry.toml) so the opcodes are available.
     ///
     ///      Four contiguous transient slots are reserved starting at `_PENDING_TAKE_SLOT`:
     ///        slot +0: tokenId        (uint256)
@@ -431,14 +431,14 @@ contract RoyaltyRouter is IRoyaltyRouter, IHooks, Ownable2Step, ReentrancyGuard 
     ///      zero delta and does NOT block the swap. This is a design choice (permissive for
     ///      non-license pools, strict via `supportedToken` for license pools).
     ///
-    ///      Billing side (sec-audit H-01 2026-04-16):
+    ///      Billing side:
     ///        exactInput  (amountSpecified < 0) → bill the SPECIFIED currency (= INPUT).
     ///        exactOutput (amountSpecified > 0) → bill the UNSPECIFIED currency (= INPUT).
     ///      Both cases collect in the currency the swapper is SPENDING, so royalty + protocol
     ///      fee are always denominated in the allowlisted accounting currency (USDC in v1)
     ///      regardless of swap direction.
     ///
-    ///      Transient storage (sec-audit H-02 2026-04-16): the cross-callback memo is written
+    ///      Transient storage: the cross-callback memo is written
     ///      to EIP-1153 transient slots, not regular storage, so there is no way for a stale
     ///      memo to poison the next tx.
     function beforeSwap(
@@ -648,7 +648,7 @@ contract RoyaltyRouter is IRoyaltyRouter, IHooks, Ownable2Step, ReentrancyGuard 
 
     /// @dev Compute the INPUT currency — the one the swapper is SPENDING — regardless of
     ///      exactInput vs exactOutput. This is the side `beforeSwap` bills so royalty + protocol
-    ///      fee are always denominated in the user-spent currency (sec-audit H-01 2026-04-16).
+    ///      fee are always denominated in the user-spent currency.
     ///
     ///      v4 semantics:
     ///        `amountSpecified < 0` ⇒ exactInput (specified = amount going IN, user spends it).

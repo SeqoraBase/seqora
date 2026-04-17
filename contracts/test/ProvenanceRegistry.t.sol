@@ -936,7 +936,7 @@ contract ProvenanceRegistry_Fuzz_Test is ProvHarness {
 
     /// forge-config: default.fuzz.runs = 128
     /// @notice Fuzz confirms cross-tokenId replay is CLOSED. An attestation signed for idA
-    ///         reverts `TokenIdMismatch` when submitted against idB (sec-audit H-01 fix).
+    ///         reverts `TokenIdMismatch` when submitted against idB.
     function testFuzz_CrossTokenIdReplay_RevertsTokenIdMismatch(bytes32 saltA, bytes32 saltB) public {
         // Derive two distinct canonical hashes from user-supplied salts.
         vm.assume(saltA != saltB);

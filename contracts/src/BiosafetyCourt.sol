@@ -264,14 +264,14 @@ contract BiosafetyCourt is
     uint128 public treasuryAccrued;
 
     /// @dev Accrued reviewer-cut owed to the owner/arbitrator in v1. Pulled via
-    ///      `withdrawReviewerCut`. Moved BEFORE `__gap` per sec-audit H-03 (2026-04-16) to
-    ///      maintain upgrade-safe append ordering.
+    ///      `withdrawReviewerCut`. Placed before `__gap` to maintain upgrade-safe append
+    ///      ordering.
     uint128 internal _reviewerCutAccrued;
 
     /// @dev Per-reviewer cumulative `DISPUTE_BOND` locked against open disputes they have
     ///      raised. Incremented on `raiseDispute`, decremented on all terminal `resolveDispute`
     ///      outcomes. Guards `requestUnstake` / `unstakeReviewer` so a reviewer cannot exit
-    ///      while their bond collateralizes a pending slash (sec-audit H-02 2026-04-16).
+    ///      while their bond collateralizes a pending slash.
     mapping(address => uint128) private _disputeBondLocked;
 
     /// @dev UUPS storage reservation. Layout: 12 declared slots above + 46 gap = 58 total.
@@ -383,8 +383,7 @@ contract BiosafetyCourt is
     /// @dev Records the unstake request timestamp; actual withdrawal must wait
     ///      `REVIEWER_UNSTAKE_COOLDOWN`. The reviewer is still considered "active" during the
     ///      cooldown for the purposes of `raiseDispute` resolution — slashing still applies.
-    ///      Reverts `StakeLocked` if the reviewer has dispute bond locked against open cases
-    ///      (sec-audit H-02 2026-04-16).
+    ///      Reverts `StakeLocked` if the reviewer has dispute bond locked against open cases.
     function requestUnstake() external override {
         SeqoraTypes.ReviewerStake storage s = _stakes[msg.sender];
         if (s.bond == 0) revert StakeTooLow(0, SeqoraTypes.MIN_REVIEWER_STAKE);
@@ -399,13 +398,13 @@ contract BiosafetyCourt is
     /// @inheritdoc IBiosafetyCourt
     /// @dev Withdraws the full bond after the cooldown. Partial withdrawals are v2. Reverts
     ///      if `requestUnstake` was not called, cooldown is not elapsed, or dispute bond is
-    ///      locked (sec-audit H-02 2026-04-16).
+    ///      locked.
     function unstakeReviewer() external override nonReentrant returns (uint128 amount) {
         SeqoraTypes.ReviewerStake storage s = _stakes[msg.sender];
         if (s.bond == 0) revert StakeTooLow(0, SeqoraTypes.MIN_REVIEWER_STAKE);
         if (s.unstakeRequestedAt == 0) revert UnstakeNotRequested();
         // Double-check locked bond at withdrawal time — a dispute may have been raised between
-        // `requestUnstake` and this call (sec-audit H-02 2026-04-16).
+        // `requestUnstake` and this call.
         uint128 locked = _disputeBondLocked[msg.sender];
         if (locked > 0) revert StakeLocked(s.bond, locked);
 
@@ -480,7 +479,7 @@ contract BiosafetyCourt is
         openDisputeOf[tokenId] = caseId;
 
         // Lock DISPUTE_BOND from the raiser's stake so they cannot unstake while this
-        // dispute is pending (sec-audit H-02 2026-04-16).
+        // dispute is pending.
         _disputeBondLocked[msg.sender] += SeqoraTypes.DISPUTE_BOND;
 
         emit DisputeRaised(caseId, tokenId, msg.sender, evidenceHash);

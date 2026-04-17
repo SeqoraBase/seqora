@@ -34,7 +34,7 @@ pragma solidity ^0.8.24;
 //          is the FIRST signed field of the EIP-712 payload and MUST equal the on-chain
 //          `tokenId` argument — a mismatch reverts `TokenIdMismatch(expected, actual)`.
 //          A signature captured for design A cannot be submitted against design B
-//          because the oracle signed exactly one tokenId (sec-audit H-01 2026-04-16).
+//          because the oracle signed exactly one tokenId.
 //   2. EIP-712 replay across chains — domain separator bakes in `block.chainid` + this
 //      contract's address via OZ `EIP712`. A signature for Base mainnet will not verify on
 //      Base Sepolia or any fork.
@@ -83,7 +83,7 @@ contract ProvenanceRegistry is IProvenanceRegistry, Ownable2Step, Pausable, Reen
 
     // `TokenIdMismatch(uint256 expected, uint256 actual)` — declared on `IProvenanceRegistry`;
     // inherited here. Used by `recordWetLabAttestation` to close cross-tokenId replay on
-    // WetLab oracle signatures (sec-audit H-01 2026-04-16).
+    // WetLab oracle signatures.
 
     // -------------------------------------------------------------------------
     // Events (contract-local — submission + oracle events are declared on IProvenanceRegistry)
@@ -106,7 +106,7 @@ contract ProvenanceRegistry is IProvenanceRegistry, Ownable2Step, Pausable, Reen
 
     /// @notice EIP-712 type hash for `SeqoraTypes.WetLabAttestation` — field order MUST match the struct.
     /// @dev Note `tokenId` is the first signed field. The on-chain call then asserts that the
-    ///      signed tokenId matches the `tokenId` argument (sec-audit H-01 2026-04-16).
+    ///      signed tokenId matches the `tokenId` argument.
     bytes32 public constant WET_LAB_ATTESTATION_TYPEHASH = keccak256(
         "WetLabAttestation(uint256 tokenId,address oracle,string vendor,string orderRef,uint64 synthesizedAt,bytes32 payloadHash)"
     );
@@ -195,8 +195,7 @@ contract ProvenanceRegistry is IProvenanceRegistry, Ownable2Step, Pausable, Reen
     /// @dev Verifies EIP-712 signature by `attestation.oracle` and that the oracle is in the
     ///      approved set. `msg.sender` is not restricted (relayer-friendly). Reverts on invalid
     ///      signature, unapproved oracle, duplicate record, unknown tokenId, pause, zero
-    ///      oracle, or `attestation.tokenId != tokenId` (cross-tokenId replay; sec-audit
-    ///      H-01 2026-04-16).
+    ///      oracle, or `attestation.tokenId != tokenId` (cross-tokenId replay).
     function recordWetLabAttestation(
         uint256 tokenId,
         SeqoraTypes.WetLabAttestation calldata attestation,

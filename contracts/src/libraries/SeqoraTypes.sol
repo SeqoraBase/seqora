@@ -295,7 +295,7 @@ library SeqoraTypes {
     /// @dev v1 = signed synthesis receipt (Twist/IDT/Ansa). v2 will accept TEE proofs.
     ///      `tokenId` is the FIRST field and MUST match the tokenId arg of
     ///      `recordWetLabAttestation` — the attestation is bound to the design it describes
-    ///      under the oracle's signature (sec-audit ProvenanceRegistry H-01 2026-04-16). A
+    ///      under the oracle's signature. A
     ///      mismatch reverts `TokenIdMismatch`, defeating cross-tokenId replay where a
     ///      captured signature for design A is submitted against design B.
     /// @param tokenId Design id the receipt describes. Signed by the oracle.
