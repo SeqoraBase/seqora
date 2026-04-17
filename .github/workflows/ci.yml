@@ -83,3 +83,31 @@ jobs:
       - name: Build
         working-directory: frontend
         run: npm run build
+
+  synbiohub-ingest:
+    name: synbiohub-ingest build + test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: tools/synbiohub-ingest/package-lock.json
+
+      - name: Install
+        working-directory: tools/synbiohub-ingest
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: tools/synbiohub-ingest
+        run: npm run typecheck
+
+      - name: Build
+        working-directory: tools/synbiohub-ingest
+        run: npm run build
+
+      - name: Test
+        working-directory: tools/synbiohub-ingest
+        run: npm test
