@@ -1,9 +1,9 @@
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
-import { base } from "wagmi/chains";
+import { base, baseSepolia } from "wagmi/chains";
 
 export const config = getDefaultConfig({
   appName: "Seqora",
-  projectId: "YOUR_WALLETCONNECT_PROJECT_ID",
-  chains: [base],
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "PLACEHOLDER",
+  chains: [base, baseSepolia],
   ssr: true,
 });

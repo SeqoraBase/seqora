@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const navLinks = [
   { label: "Protocol", href: "#" },
@@ -30,12 +31,10 @@ export default function Navbar() {
       }`}
     >
       <div className="mx-auto max-w-[1280px] px-6 flex items-center justify-between h-16">
-        {/* Wordmark */}
         <a href="#" className="text-primary font-bold text-2xl tracking-tight">
           Seqora
         </a>
 
-        {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
             <a
@@ -48,18 +47,10 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* Launch App button */}
         <div className="hidden md:block">
-          <a
-            href="#"
-            className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-base transition-all duration-300 hover:bg-primary-hover hover:shadow-lg hover:shadow-primary-glow"
-            style={{ color: "#0A0B0F" }}
-          >
-            Launch App
-          </a>
+          <ConnectButton />
         </div>
 
-        {/* Mobile hamburger */}
         <button
           className="md:hidden text-text-secondary hover:text-text-primary transition-colors"
           onClick={() => setMobileOpen(!mobileOpen)}
@@ -69,7 +60,6 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Mobile slide-in */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
@@ -90,13 +80,7 @@ export default function Navbar() {
                   {link.label}
                 </a>
               ))}
-              <a
-                href="#"
-                className="inline-flex items-center justify-center rounded-full bg-primary px-8 py-3 text-sm font-semibold transition-all duration-300 hover:bg-primary-hover"
-                style={{ color: "#0A0B0F" }}
-              >
-                Launch App
-              </a>
+              <ConnectButton />
             </div>
           </motion.div>
         )}
