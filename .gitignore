@@ -1,6 +1,10 @@
 # Private planning and research — never committed
 docs/
 
+# Local dev config
+CLAUDE.md
+.claude/
+
 # Foundry
 contracts/out/
 contracts/cache/
