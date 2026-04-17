@@ -147,7 +147,7 @@ contract LicenseRegistry is
     error AlreadyRevoked(uint256 licenseTokenId);
 
     /// @notice Thrown when a template's `defaultDuration` (in days) exceeds `MAX_LICENSE_DURATION`.
-    /// @dev Per audit finding M-04. `0` (perpetual) is always allowed.
+    /// @dev Duration cap. `0` (perpetual) is always allowed.
     /// @param suppliedDays Caller-supplied duration in days.
     /// @param maxDays The enforced cap in days (MAX_LICENSE_DURATION / 1 day).
     error DurationTooLong(uint32 suppliedDays, uint32 maxDays);
@@ -203,7 +203,7 @@ contract LicenseRegistry is
     ///      of licenseTokenIds ever minted-to or transferred-to `holder` against `tokenId`.
     ///      Written on grant (`grantLicense`) and on transfer (`_update`); entries are NEVER
     ///      removed — iteration filters by `_isLicenseLive`, and realistic per-holder arrays
-    ///      stay small (<< 16) in practice. Closes audit M-01: griefing via mass-grant no
+    ///      stay small (<< 16) in practice. Griefing via mass-grant no
     ///      longer linearly scales `checkLicenseValid` runtime because only the target
     ///      holder's array is walked, not the entire grant history.
     mapping(uint256 tokenId => mapping(address holder => uint256[] licenseTokenIds)) private _licensesOf;
@@ -344,7 +344,7 @@ contract LicenseRegistry is
         // expiry == 0 AND template.defaultDuration > 0 → now + defaultDuration days.
         // expiry == 0 AND template.defaultDuration == 0 → perpetual (stored as 0).
         // expiry > 0 → honour caller's value (MUST be in the future — no past-expiry grants).
-        // M-04: per-grant `expiry` overrides are capped at `block.timestamp + MAX_LICENSE_DURATION`
+        // Duration cap: per-grant `expiry` overrides are capped at `block.timestamp + MAX_LICENSE_DURATION`
         //       to prevent 11M-year expiries indistinguishable from perpetual. Template-derived
         //       expiries are already bounded by `_validateDuration` on register.
         uint64 resolvedExpiry = expiry;
@@ -389,7 +389,7 @@ contract LicenseRegistry is
             _exclusiveHolder[tokenId] = licenseTokenId;
         }
 
-        // M-01: write to the reverse index BEFORE the ERC-721 mint. A well-behaved
+        // Reverse-index: write to the reverse index BEFORE the ERC-721 mint. A well-behaved
         // receiver may re-enter a view on this contract and the state should be
         // consistent by then; the nonReentrant guard blocks write re-entry.
         _licensesOf[tokenId][licensee].push(licenseTokenId);
@@ -466,7 +466,7 @@ contract LicenseRegistry is
     ///      removed on revoke or expiry or transfer-out; the scan filters them via
     ///      `_isLicenseLive` + `_ownerOf(id) == user`. Per-holder arrays are bounded in
     ///      practice (<< 16) because they are indexed by (tokenId, user), not by global
-    ///      nextLicenseTokenId. Closes audit M-01: griefing via mass-grants to throwaway
+    ///      nextLicenseTokenId. Griefing via mass-grants to throwaway
     ///      addresses can NOT inflate this loop for any honest `user`.
     function checkLicenseValid(uint256 tokenId, address user) external view returns (bool valid) {
         // MUST remain — _ownerOf(burnt/non-existent) == 0; a `user == 0` probe would otherwise
@@ -527,7 +527,7 @@ contract LicenseRegistry is
     }
 
     /// @notice Override disables `renounceOwnership` to prevent permanent governance bricking.
-    /// @dev Mirrors L-04 fix applied to ScreeningAttestations. A renounced owner cannot register
+    /// @dev Mirrors the governance-bricking protection applied to ScreeningAttestations. A renounced owner cannot register
     ///      templates, revoke licenses, pause, rotate the feeRouter, or authorize upgrades —
     ///      every lever collapses. Always reverts with `RenounceDisabled`.
     function renounceOwnership() public view override(OwnableUpgradeable) onlyOwner {
@@ -561,7 +561,7 @@ contract LicenseRegistry is
             if (t.pilFlags & SeqoraTypes.PIL_TRANSFERABLE == 0) {
                 revert LicenseNotTransferable(licenseTokenId);
             }
-            // M-01: Maintain the reverse index for the new holder on transfer. We DO NOT
+            // Reverse-index: Maintain the reverse index for the new holder on transfer. We DO NOT
             // remove the previous owner's entry — `checkLicenseValid` filters stale entries
             // via `_ownerOf(id) == user`. Appending is O(1); lazy cleanup keeps
             // per-transfer gas flat.
@@ -572,7 +572,7 @@ contract LicenseRegistry is
     /// @dev Overrides OZ v5's `_approve` to fail fast on non-transferable licenses. Allows
     ///      `to == address(0)` (approval clearing) so holders can always reset stale state.
     ///      Per-token check is cheap (one SLOAD of the license + one of the template). Audit
-    ///      M-02: prevents wallets and marketplace aggregators from displaying misleading
+    ///      Prevents wallets and marketplace aggregators from displaying misleading
     ///      "approved" state on non-transferable license tokens.
     ///
     ///      NOTE on `setApprovalForAll`: not overridden. `setApprovalForAll` is operator-level
@@ -638,7 +638,7 @@ contract LicenseRegistry is
     }
 
     /// @dev Reverts with `LicenseNotTransferable(licenseTokenId)` if the license's template
-    ///      does NOT have `PIL_TRANSFERABLE` set. Used by the `_approve` override (M-02) and
+    ///      does NOT have `PIL_TRANSFERABLE` set. Used by the `_approve` override and
     ///      reused-by-construction by `_update` (for actual transfers).
     function _assertTransferable(uint256 licenseTokenId) internal view {
         SeqoraTypes.License storage l = _licenses[licenseTokenId];
@@ -652,7 +652,7 @@ contract LicenseRegistry is
 
     /// @dev Enforces `MAX_LICENSE_DURATION` cap on template `defaultDuration` (expressed in
     ///      DAYS). `0` is allowed (= "no default expiry; perpetual unless overridden"). Audit
-    ///      M-04 closer.
+    ///      Duration-cap enforcement.
     function _validateDuration(uint32 durationDays) internal pure {
         if (durationDays == 0) return;
         // Cast safety: MAX_LICENSE_DURATION / SECONDS_PER_DAY == 36_500 (100 years in days),

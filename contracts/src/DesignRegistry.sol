@@ -32,14 +32,17 @@ pragma solidity ^0.8.24;
 //   contract needs to be upgraded, deploy a *new* DesignRegistry (tokenIds remain stable
 //   because they are hash-derived).
 //
-// Audit fixes (2026-04-16)
-// ------------------------
-//   H-01 — `registrant` is an explicit parameter (not `msg.sender`). `SCREENING.isValid` is
-//          called with `(uid, canonicalHash, registrant)` so a mempool replay fails screening.
-//   M-01 — `MAX_PARENTS = 16` hard cap on forkRegister parent count; `TooManyParents` error.
-//   M-02 — Resolved by H-01; mint target == registrant; relayer/Safe flows are first-class.
-//   L-01 — Dead `msg.sender == 0` check removed; `registrant == 0` check retained + strengthened.
-//   L-02 — `arweaveTx` / `ceramicStreamId` capped at 128 bytes each.
+// Hardening notes
+// ----------------
+//   Registrant-binding — `registrant` is an explicit parameter (not `msg.sender`).
+//          `SCREENING.isValid` is called with `(uid, canonicalHash, registrant)` so a
+//          mempool replay fails screening.
+//   Parent-cap — `MAX_PARENTS = 16` hard cap on forkRegister parent count; `TooManyParents` error.
+//   Mint-target — Resolved by registrant-binding; mint target == registrant; relayer/Safe flows
+//          are first-class.
+//   Dead-code cleanup — Dead `msg.sender == 0` check removed; `registrant == 0` check retained
+//          + strengthened.
+//   Input-length caps — `arweaveTx` / `ceramicStreamId` capped at 128 bytes each.
 // -----------------------------------------------------------------------------
 
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
@@ -62,7 +65,7 @@ contract DesignRegistry is ERC1155, ReentrancyGuard, IDesignRegistry {
 
     /// @notice Hard cap on the byte length of `arweaveTx` and `ceramicStreamId` strings.
     /// @dev Arweave tx ids are 43 base64 chars; Ceramic stream ids are ~63 chars. 128 is comfortable
-    ///      headroom while still blocking storage-bloat griefing (L-02).
+    ///      headroom while still blocking storage-bloat griefing.
     uint256 internal constant MAX_STRING_BYTES = 128;
 
     // -------------------------------------------------------------------------
@@ -159,7 +162,7 @@ contract DesignRegistry is ERC1155, ReentrancyGuard, IDesignRegistry {
             revert InvalidParent(bytes32(params.primaryParentTokenId));
         }
 
-        // M-01: bound the parent graph to keep downstream `parentsOf` reads cheap forever.
+        // Parent-cap: bound the parent graph to keep downstream `parentsOf` reads cheap forever.
         uint256 totalParents = params.additionalParentTokenIds.length + 1;
         if (totalParents > SeqoraTypes.MAX_PARENTS) {
             revert TooManyParents(totalParents, SeqoraTypes.MAX_PARENTS);
@@ -279,13 +282,13 @@ contract DesignRegistry is ERC1155, ReentrancyGuard, IDesignRegistry {
     ) internal returns (uint256 tokenId) {
         // --- Checks ---
 
-        // H-01: registrant cannot be the zero address. This is the real (reachable) check; the
-        // previous `msg.sender == 0` check (L-01) was dead code and has been removed.
+        // Registrant cannot be the zero address. This is the real (reachable) check; the
+        // previous `msg.sender == 0` check was dead code and has been removed.
         if (registrant == address(0)) revert SeqoraErrors.ZeroAddress();
 
         if (canonicalHash == bytes32(0)) revert SeqoraErrors.ZeroValue();
 
-        // L-02: bound unbounded-string griefing. Self-paid but still worth capping.
+        // Input-length cap: bound unbounded-string griefing. Self-paid but still worth capping.
         if (bytes(arweaveTx).length > MAX_STRING_BYTES) {
             revert StringTooLong(bytes(arweaveTx).length, MAX_STRING_BYTES);
         }
@@ -311,7 +314,7 @@ contract DesignRegistry is ERC1155, ReentrancyGuard, IDesignRegistry {
         }
 
         // --- Interaction: screening validity (STATICCALL — `isValid` is `view`) ---
-        // H-01: attestation is bound to `registrant`. A mempool replay that preserves
+        // Registrant-binding: attestation is bound to `registrant`. A mempool replay that preserves
         // (canonicalHash, uid) but substitutes a different registrant fails here.
         if (!SCREENING.isValid(screeningAttestationUID, canonicalHash, registrant)) {
             revert AttestationInvalid(screeningAttestationUID);

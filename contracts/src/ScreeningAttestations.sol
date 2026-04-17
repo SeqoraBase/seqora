@@ -88,7 +88,7 @@ contract ScreeningAttestations is IScreeningAttestations, Ownable2Step, Pausable
     /// @notice Thrown when the decoded payload is shorter than the expected schema length.
     error MalformedAttestationData();
 
-    /// @notice Thrown when `renounceOwnership` is invoked. L-04 fix: governance bricking disabled.
+    /// @notice Thrown when `renounceOwnership` is invoked. Governance bricking disabled.
     error RenounceDisabled();
 
     // -------------------------------------------------------------------------
@@ -133,7 +133,7 @@ contract ScreeningAttestations is IScreeningAttestations, Ownable2Step, Pausable
     /// @notice Deploy the screening attestations wrapper.
     /// @param eas_ EAS contract. Base mainnet canonical: `0x4200000000000000000000000000000000000021`.
     /// @param schemaUID_ Registered Seqora screening schema UID.
-    ///                   Off-chain schema string (per plan §6 #1 + H-01):
+    ///                   Off-chain schema string (per plan §6 #1, registrant-binding):
     ///                   `bytes32 canonicalHash, address registrant, uint8 screenerKind,
     ///                    uint64 screenedAt, bytes32 reportHash`.
     /// @param owner_ Initial owner (Seqora Safety Council multisig). Ownable2Step requires
@@ -198,7 +198,7 @@ contract ScreeningAttestations is IScreeningAttestations, Ownable2Step, Pausable
         (bytes32 attCanonicalHash, address attRegistrant,,,) =
             abi.decode(att.data, (bytes32, address, uint8, uint64, bytes32));
 
-        // H-01: both bindings are mandatory.
+        // Registrant-binding: both bindings are mandatory.
         if (attCanonicalHash != canonicalHash) return false;
         if (attRegistrant != registrant) return false;
 
@@ -294,7 +294,7 @@ contract ScreeningAttestations is IScreeningAttestations, Ownable2Step, Pausable
         emit EASContractSet(prev, address(eas_));
     }
 
-    /// @notice Override disables `renounceOwnership` to prevent permanent governance bricking (L-04).
+    /// @notice Override disables `renounceOwnership` to prevent permanent governance bricking.
     /// @dev A renounced owner cannot register attesters, revoke, pause, rotate EAS, or set schema — every
     ///      safety lever collapses. Always reverts with `RenounceDisabled`.
     function renounceOwnership() public view override onlyOwner {

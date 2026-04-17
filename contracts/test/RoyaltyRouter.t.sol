@@ -131,7 +131,7 @@ abstract contract RoyaltyRouterBase is Test {
     }
 
     /// @notice Build a SwapParams where usdc is the INPUT currency (so the hook bills in USDC).
-    /// @dev Post H-01 fix the hook bills the INPUT currency. With our pool key
+    /// @dev The hook bills the INPUT currency. With our pool key
     ///      (currency0 = 0x1, currency1 = usdc), `zeroForOne=false` means the user SELLS
     ///      currency1 (usdc) and BUYS currency0. For exactInput, amountSpecified < 0.
     function _swapParamsUsdcInput(int256 amountSpecified) internal pure returns (SwapParams memory p) {
@@ -706,7 +706,7 @@ contract RoyaltyRouter_HookIntegration is RoyaltyRouterBase {
         assertEq(usdc.balanceOf(TREASURY), fee);
         assertEq(usdc.balanceOf(address(router)), 0);
 
-        // Post H-01 fix: exactInput delta is on the SPECIFIED side (= input currency = usdc).
+        // exactInput delta is on the SPECIFIED side (= input currency = usdc).
         BeforeSwapDelta d = poolManager.lastBeforeDelta();
         int128 spec = BeforeSwapDeltaLibrary.getSpecifiedDelta(d);
         int128 unspec = BeforeSwapDeltaLibrary.getUnspecifiedDelta(d);
@@ -719,7 +719,7 @@ contract RoyaltyRouter_HookIntegration is RoyaltyRouterBase {
         // For exactOutput (positive amountSpecified) with zeroForOne=false:
         //   - specified = currency0 (output, what user buys)
         //   - unspecified = currency1 = usdc (input, what user spends)
-        // Post H-01 fix: the hook bills INPUT = unspecified for exactOutput. Delta is on
+        // The hook bills INPUT = unspecified for exactOutput. Delta is on
         // the UNSPECIFIED side: toBeforeSwapDelta(0, +total).
         uint256 absAmount = 500_000;
         (uint256 royalty, uint256 fee) = _expectedTake(absAmount);
@@ -991,7 +991,7 @@ contract RoyaltyRouter_HookReentrancy is Test {
             tickSpacing: 60,
             hooks: IHooks(address(router))
         });
-        // Post H-01 fix: use zeroForOne=false so usdc (currency1) is the input (billed) currency.
+        // zeroForOne=false so usdc (currency1) is the input (billed) currency.
         SwapParams memory p =
             SwapParams({ zeroForOne: false, amountSpecified: -int256(absAmount), sqrtPriceLimitX96: 0 });
 

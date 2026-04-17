@@ -153,7 +153,7 @@ contract LicenseRegistryHandler is CommonBase, StdCheats, StdUtils {
         } catch { }
     }
 
-    /// @notice Bogus grant spam to a unique junk address. Exercises the M-01 invariant —
+    /// @notice Bogus grant spam to a unique junk address. Exercises the bounded-gas invariant —
     ///         `checkLicenseValid(tokenId, honestUser)` must remain bounded even as the
     ///         total grant count grows. Call count in the invariant run bounds the spam.
     function spamGrant(uint8 designIdx) external {

@@ -96,11 +96,11 @@ contract LicenseRegistry_Invariant_Test is LicenseRegistryHarness {
         assertEq(t.defaultDuration, trackedAtReg.defaultDuration);
     }
 
-    /// @notice M-01 bounded-gas invariant: `checkLicenseValid(tokenId, honestUser)` must stay
+    /// @notice Bounded-gas invariant: `checkLicenseValid(tokenId, honestUser)` must stay
     ///         well under the block-gas ceiling regardless of how many bogus grants the
     ///         handler's spamGrant has piled onto the same tokenId (bogus grants go to
     ///         unique junk addresses, so the HONEST user's reverse-index array is not
-    ///         contaminated). Pre-M-01-fix this loop was O(total grants) and would easily
+    ///         contaminated). Before the reverse-index fix this loop was O(total grants) and would easily
     ///         blow past any reasonable cap after 50+ calls.
     function invariant_CheckLicenseValid_GasBounded() public view {
         uint256 n = handler.designCount();

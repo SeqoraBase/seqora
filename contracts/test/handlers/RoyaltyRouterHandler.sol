@@ -156,7 +156,7 @@ contract RoyaltyRouterHandler is CommonBase, StdCheats, StdUtils {
             tickSpacing: 60,
             hooks: IHooks(address(router))
         });
-        // Post H-01 fix: zeroForOne=false so usdc (currency1) is the input (billed) currency.
+        // zeroForOne=false so usdc (currency1) is the input (billed) currency.
         SwapParams memory p = SwapParams({ zeroForOne: false, amountSpecified: -int256(amt), sqrtPriceLimitX96: 0 });
 
         try poolManager.simulateSwap(IHooks(address(router)), sender, key, p, abi.encode(tokenId)) {

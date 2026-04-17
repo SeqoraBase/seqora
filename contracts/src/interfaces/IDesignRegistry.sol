@@ -68,7 +68,7 @@ interface IDesignRegistry {
     /// @notice Register a new genesis design on behalf of `registrant`.
     /// @dev The ERC-1155 mint target and the stored `registrant` field are both set to the
     ///      `registrant` argument, NOT `msg.sender`. This enables relayer, Safe, and 4337
-    ///      smart-account flows while preserving the H-01 binding: `IScreeningAttestations.isValid`
+    ///      smart-account flows while preserving the registrant-binding: `IScreeningAttestations.isValid`
     ///      is called with `(attestationUID, canonicalHash, registrant)`, so the attester must
     ///      have explicitly signed an attestation for this registrant.
     ///
@@ -105,7 +105,7 @@ interface IDesignRegistry {
     /// @dev Parameters are packed into `SeqoraTypes.ForkParams` to collapse stack pressure (tester
     ///      P1). The ERC-1155 mint target and stored `registrant` are both `params.registrant`;
     ///      see `register` natspec for the relayer/Safe rationale. `isValid` is called with
-    ///      `(screeningAttestationUID, canonicalHash, registrant)` per H-01.
+    ///      `(screeningAttestationUID, canonicalHash, registrant)` per the registrant-binding rule.
     ///
     ///      Auto-splits the new royalty stream so that `parentSplitBps` flows back to parents'
     ///      0xSplits contracts (see plan §4 — Story PIL semantics). The actual per-parent split

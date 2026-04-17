@@ -836,7 +836,7 @@ contract LicenseRegistry_Fuzz_Test is LicenseRegistryHarness {
 }
 
 // ============================================================================
-// AUDIT M-01 — checkLicenseValid reverse-index griefing resistance
+// checkLicenseValid reverse-index griefing resistance
 // ============================================================================
 
 contract LicenseRegistry_CheckLicenseValid_ReverseIndex_Test is LicenseRegistryHarness {
@@ -851,7 +851,7 @@ contract LicenseRegistry_CheckLicenseValid_ReverseIndex_Test is LicenseRegistryH
         _createTemplate(Tmpl.COMMERCIAL_TRANSFERABLE, SeqoraTypes.PIL_COMMERCIAL | SeqoraTypes.PIL_TRANSFERABLE, 0);
     }
 
-    /// @notice M-01 griefing scenario: mass-grant bogus licenses to throwaway addresses and
+    /// @notice Reverse-index griefing scenario: mass-grant bogus licenses to throwaway addresses and
     ///         assert that `checkLicenseValid(victimTokenId, realUser)` remains cheap and
     ///         returns true. Pre-fix this scan was O(nextLicenseTokenId); post-fix it walks
     ///         only `_licensesOf[tokenId][realUser]`.
@@ -946,7 +946,7 @@ contract LicenseRegistry_CheckLicenseValid_ReverseIndex_Test is LicenseRegistryH
 }
 
 // ============================================================================
-// AUDIT M-02 — approve / setApprovalForAll on non-transferable licenses
+// approve / setApprovalForAll on non-transferable licenses
 // ============================================================================
 
 contract LicenseRegistry_Approve_NonTransferable_Test is LicenseRegistryHarness {
@@ -987,7 +987,7 @@ contract LicenseRegistry_Approve_NonTransferable_Test is LicenseRegistryHarness 
     function test_SetApprovalForAll_NotOverridden_TransferStillBlocked() public {
         uint256 lt = _grantLicense(ALICE, designId, Tmpl.NON_TRANSFERABLE, BOB);
 
-        // operator-level approval succeeds (documented M-02 behaviour).
+        // operator-level approval succeeds (non-transferable approval passthrough behaviour).
         vm.prank(BOB);
         licenses.setApprovalForAll(CAROL, true);
         assertTrue(licenses.isApprovedForAll(BOB, CAROL));
@@ -1000,7 +1000,7 @@ contract LicenseRegistry_Approve_NonTransferable_Test is LicenseRegistryHarness 
 }
 
 // ============================================================================
-// AUDIT M-04 — defaultDuration cap + per-grant expiry cap
+// defaultDuration cap + per-grant expiry cap
 // ============================================================================
 
 contract LicenseRegistry_DurationCap_Test is LicenseRegistryHarness {

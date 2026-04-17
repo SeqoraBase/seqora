@@ -301,7 +301,7 @@ contract ScreeningAttestations_Setters_Test is ScreeningAttestationsBase {
 
 contract ScreeningAttestations_Pause_Test is ScreeningAttestationsBase {
     function test_RenounceOwnership_Reverts() public {
-        // L-04 regression: owner's renounceOwnership must revert with RenounceDisabled and
+        // Renounce-guard regression: owner's renounceOwnership must revert with RenounceDisabled and
         // leave ownership unchanged. Prevents permanent governance bricking.
         address ownerBefore = screening.owner();
         assertEq(ownerBefore, OWNER, "precondition: OWNER is the current owner");
@@ -442,7 +442,7 @@ contract ScreeningAttestations_IsValid_Test is ScreeningAttestationsBase {
 }
 
 // =============================================================================
-// FUZZ — registrant binding (H-01 core property)
+// FUZZ — registrant binding (core property)
 // =============================================================================
 
 contract ScreeningAttestations_Fuzz_Test is ScreeningAttestationsBase {

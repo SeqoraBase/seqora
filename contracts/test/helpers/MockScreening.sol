@@ -6,7 +6,7 @@ import { IDesignRegistry } from "../../src/interfaces/IDesignRegistry.sol";
 import { SeqoraTypes } from "../../src/libraries/SeqoraTypes.sol";
 
 /// @notice Base stub — governance methods reduced to no-ops; each variant overrides `isValid`.
-/// @dev The 3-arg `isValid(uid, canonicalHash, registrant)` is the post-H-01 shape.
+/// @dev The 3-arg `isValid(uid, canonicalHash, registrant)` binds attestation to a specific registrant.
 abstract contract MockScreeningBase is IScreeningAttestations {
     function registerAttester(address, SeqoraTypes.ScreenerKind) external { }
     function revokeAttester(address, string calldata) external { }
@@ -62,7 +62,7 @@ contract ToggleableScreening is MockScreeningBase {
     }
 }
 
-/// @notice H-01 substitution-attack mock: returns true ONLY for a preconfigured tuple.
+/// @notice Substitution-attack mock: returns true ONLY for a preconfigured tuple.
 /// @dev Models an on-chain EAS attestation issued by an attester who signed specifically over
 ///      `(expectedUid, expectedCanonicalHash, expectedRegistrant)`. Any front-runner supplying
 ///      a different `registrant` for the same (uid, canonicalHash) must be rejected.

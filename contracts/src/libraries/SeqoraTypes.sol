@@ -20,14 +20,14 @@ library SeqoraTypes {
     uint16 internal constant PROTOCOL_FEE_BPS = 300;
 
     /// @notice Maximum number of parents (primary + additional) a fork may declare.
-    /// @dev Per audit finding M-01. Bounds on-chain storage and the O(n^2) dup check in
+    /// @dev Parent-cap. Bounds on-chain storage and the O(n^2) dup check in
     ///      `DesignRegistry.forkRegister`, and prevents landmine reads via `parentsOf`.
     ///      16 is a comfortable headroom over the empirical synbio upper bound (~10).
     uint256 internal constant MAX_PARENTS = 16;
 
     /// @notice Maximum license duration enforceable via `LicenseTemplate.defaultDuration`
     ///         or per-grant `expiry` overrides (~100 years in seconds).
-    /// @dev Per LicenseRegistry audit finding M-04. Caps runaway or misconfigured templates
+    /// @dev Duration cap. Caps runaway or misconfigured templates
     ///      that could otherwise set ~11M-year expiries indistinguishable from perpetual.
     ///      `0` always means "no expiry / perpetual" — unaffected by this cap.
     ///      100 * 365 days = 3_153_600_000 seconds — comfortably fits uint32/uint64.
@@ -194,7 +194,7 @@ library SeqoraTypes {
     /// @param registrant Address that will own the minted tokenId and the royalty stream.
     ///                   Off-chain UX SHOULD set `registrant = msg.sender` for direct EOA flows;
     ///                   relayers MAY set it to the end-user address provided the EAS
-    ///                   attestation was issued for that address (see H-01 binding in
+    ///                   attestation was issued for that address (see registrant-binding in
     ///                   `IScreeningAttestations`).
     /// @param primaryParentTokenId Primary parent (root of fork chain). Must already be registered.
     /// @param additionalParentTokenIds Extra parents beyond the primary. Total parent count

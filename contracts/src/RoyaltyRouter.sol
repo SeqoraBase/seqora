@@ -36,7 +36,7 @@ pragma solidity ^0.8.24;
 //   address is the deployer's problem — `validateHookAddress(this)` in the constructor will
 //   revert on mismatch, failing deploys loudly until the right CREATE2 salt is used.
 //
-// Take-side choice (post H-01 fix)
+// Take-side choice (post registrant-binding fix)
 // --------------------------------
 //   The invariant we want is: **the royalty + protocol fee is ALWAYS denominated in the
 //   currency the swapper is SPENDING** (and therefore the side that must be on the
@@ -115,7 +115,7 @@ contract RoyaltyRouter is IRoyaltyRouter, IHooks, Ownable2Step, ReentrancyGuard 
     ///         hook entrypoint is invoked (those are retained for ABI compat but unused).
     error HookMisconfigured();
 
-    /// @notice Thrown on any attempt to call `renounceOwnership`. Mirrors L-04 / LicenseRegistry.
+    /// @notice Thrown on any attempt to call `renounceOwnership`. Governance bricking disabled.
     error RenounceDisabled();
 
     /// @notice Thrown when a v4 hook method is invoked by any address other than the PoolManager.
@@ -381,7 +381,7 @@ contract RoyaltyRouter is IRoyaltyRouter, IHooks, Ownable2Step, ReentrancyGuard 
         emit HookCollectionPaused(paused);
     }
 
-    /// @notice Disables `renounceOwnership`. See L-04.
+    /// @notice Disables `renounceOwnership` to prevent governance bricking.
     function renounceOwnership() public view override onlyOwner {
         revert RenounceDisabled();
     }

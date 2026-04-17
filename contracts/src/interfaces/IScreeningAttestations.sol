@@ -54,7 +54,7 @@ interface IScreeningAttestations {
     ///      attestation is not revoked (on EAS or locally), not expired, attester is in the
     ///      approved set, the attested `canonicalHash` field equals `canonicalHash`, and the
     ///      attested `registrant` field equals `registrant`. The `registrant` binding is the
-    ///      H-01 fix: prevents a mempool observer from replaying Alice's genesis-registration
+    ///      Registrant-binding fix: prevents a mempool observer from replaying Alice's genesis-registration
     ///      calldata under their own address.
     ///
     ///      Off-chain UX SHOULD set `registrant = msg.sender` for direct EOA flows; relayers /

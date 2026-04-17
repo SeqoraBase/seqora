@@ -44,7 +44,7 @@ contract ERC1155HolderStub {
 }
 
 /// @notice Thin relayer that submits `register` / `forkRegister` on behalf of a user.
-/// @dev Tests the M-02 fix: mint target / stored registrant come from the arg, NOT msg.sender.
+/// @dev Tests that mint target / stored registrant come from the arg, NOT msg.sender.
 contract Relayer {
     function relayRegister(
         DesignRegistry registry,
@@ -135,7 +135,7 @@ contract DesignRegistry_Register_Test is BaseTest {
     }
 
     function test_Register_RevertsWhen_RegistrantZero() public {
-        // L-01 confirmation: registrant == address(0) must revert.
+        // Zero-address guard: registrant == address(0) must revert.
         bytes32 h = keccak256("registrant-zero");
         vm.expectRevert(SeqoraErrors.ZeroAddress.selector);
         vm.prank(ALICE);
@@ -252,7 +252,7 @@ contract DesignRegistry_Register_Test is BaseTest {
     }
 
     // ---------------------------------------------------------------------
-    // L-02 — string length caps
+    // String length caps
     // ---------------------------------------------------------------------
 
     function test_Register_RevertsWhen_ArweaveTxExceeds128() public {
@@ -285,7 +285,7 @@ contract DesignRegistry_Register_Test is BaseTest {
     }
 
     // ---------------------------------------------------------------------
-    // H-01 — registrant-bound attestation
+    // Registrant-bound attestation
     // ---------------------------------------------------------------------
 
     function test_Register_HSubstitution_RejectsWhenRegistrantIsBob() public {
@@ -335,7 +335,7 @@ contract DesignRegistry_Register_Test is BaseTest {
     }
 
     // ---------------------------------------------------------------------
-    // M-02 — relayer path
+    // Relayer path
     // ---------------------------------------------------------------------
 
     function test_Register_Relayer_MintsToRegistrant() public {
@@ -584,7 +584,7 @@ contract DesignRegistry_ForkRegister_Test is BaseTest {
     }
 
     // ---------------------------------------------------------------------
-    // M-01 — MAX_PARENTS cap
+    // MAX_PARENTS cap
     // ---------------------------------------------------------------------
 
     function test_ForkRegister_AtMaxParents_Succeeds_Boundary() public {
@@ -624,7 +624,7 @@ contract DesignRegistry_ForkRegister_Test is BaseTest {
     }
 
     // ---------------------------------------------------------------------
-    // H-01 — registrant-bound attestation on forkRegister
+    // Registrant-bound attestation on forkRegister
     // ---------------------------------------------------------------------
 
     function test_ForkRegister_HSubstitution_RejectsWhenRegistrantIsBob() public {

@@ -89,7 +89,7 @@ pragma solidity ^0.8.24;
 //      dispute per tokenId ratelimits DoS.
 //   3. Griefing via slashing — a malicious arbitrator (compromised owner) can slash reviewers
 //      arbitrarily. Mitigated by owner = multisig + post-launch Timelock per LicenseRegistry
-//      M-03. `renounceOwnership` is disabled.
+//      Governance-bricking protection. `renounceOwnership` is disabled.
 //   4. Freeze race — a design may be frozen concurrently via a dispute resolution AND a
 //      Safety Council action. `safetyCouncilFreeze` refuses if the tokenId is already frozen
 //      by ANY path; dispute-driven freeze is upgrade-compatible (status == Ratified never
@@ -152,7 +152,7 @@ contract BiosafetyCourt is
     error UnstakeNotRequested();
 
     /// @notice Thrown when a reviewer attempts to move a bond that is locked against open disputes.
-    /// @dev Sec-audit BiosafetyCourt H-02 2026-04-16. Open disputes keep
+    /// @dev Bond-lock invariant. Open disputes keep
     ///      `DISPUTE_BOND * openDisputeCount[reviewer]` wei of the bond locked so the reviewer
     ///      cannot `requestUnstake` / `unstakeReviewer` out from under a pending slash.
     /// @param available The reviewer's total current bond.

@@ -850,7 +850,7 @@ contract BiosafetyCourt_ResolveDispute_Test is BiosafetyCourtHarness {
         court.requestUnstake();
     }
 
-    /// @notice H-02 partial lock: reviewer stakes 2 ETH, opens 1 dispute (0.5 ETH locked).
+    /// @notice Partial lock: reviewer stakes 2 ETH, opens 1 dispute (0.5 ETH locked).
     ///         After resolution frees the lock, unstake succeeds.
     function test_Unstake_AfterDisputeResolved_Succeeds() public {
         // Resolve BOB's dispute first so the lock is freed, then unstake works.
@@ -867,7 +867,7 @@ contract BiosafetyCourt_ResolveDispute_Test is BiosafetyCourtHarness {
         assertEq(court.getReviewerStake(BOB).bond, 0);
     }
 
-    /// @notice H-02: `unstakeReviewer` also checks the lock at withdrawal time, even if
+    /// @notice Dispute-bond lock: `unstakeReviewer` also checks the lock at withdrawal time, even if
     ///         `requestUnstake` was somehow queued before a new dispute was opened.
     function test_Unstake_FullyLocked_Reverts() public {
         // BOB has exactly MIN_REVIEWER_STAKE (1 ether) and one open dispute.
@@ -1638,7 +1638,7 @@ contract BiosafetyCourt_UUPS_Test is BiosafetyCourtHarness {
         vm.prank(GOVERNANCE);
         court.resolveDispute(caseId, SeqoraTypes.DisputeOutcome.Dismissed);
 
-        // Storage layout (post H-03 fix, verified via `forge inspect`):
+        // Storage layout (verified via `forge inspect`):
         //   slot  0     designRegistry
         //   slot  1     safetyCouncil
         //   slot  2     treasury
@@ -1649,7 +1649,7 @@ contract BiosafetyCourt_UUPS_Test is BiosafetyCourtHarness {
         //   slot  7     _stakes (mapping ptr)
         //   slot  8     pendingDeposits (mapping ptr)
         //   slot  9     treasuryAccrued (uint128, offset 0) | _reviewerCutAccrued (uint128, offset 16)
-        //   slot 10     _disputeBondLocked (mapping)   <-- NEW (H-02 fix)
+        //   slot 10     _disputeBondLocked (mapping)   <-- dispute-bond lock
         //   slot 11..56 __gap[46]
         bytes32 raw = vm.load(address(court), bytes32(uint256(9)));
         // Slot 9 packs: lower 128 bits = treasuryAccrued, upper 128 bits = _reviewerCutAccrued.
@@ -1657,7 +1657,7 @@ contract BiosafetyCourt_UUPS_Test is BiosafetyCourtHarness {
         // `_reviewerCutAccrued` accrued 30% of 0.5 ether (DISMISSAL_REVIEWER_CUT_BPS=3000).
         uint128 expected =
             uint128(uint256(SeqoraTypes.DISPUTE_BOND) * SeqoraTypes.DISMISSAL_REVIEWER_CUT_BPS / SeqoraTypes.BPS);
-        assertEq(reviewerCut, expected, "_reviewerCutAccrued in slot 9 upper bits (pre-gap) - H-03 fix verified");
+        assertEq(reviewerCut, expected, "_reviewerCutAccrued in slot 9 upper bits (pre-gap) verified");
     }
 }
 
