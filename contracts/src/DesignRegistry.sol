@@ -237,8 +237,9 @@ contract DesignRegistry is ERC1155, ReentrancyGuard, IDesignRegistry {
 
     /// @inheritdoc IDesignRegistry
     function parentsOf(uint256 tokenId) external view returns (bytes32[] memory parents) {
-        if (_designs[tokenId].registeredAt == 0) revert SeqoraErrors.UnknownToken(tokenId);
-        parents = _designs[tokenId].parentTokenIds;
+        SeqoraTypes.Design storage d = _designs[tokenId];
+        if (d.registeredAt == 0) revert SeqoraErrors.UnknownToken(tokenId);
+        parents = d.parentTokenIds;
     }
 
     // -------------------------------------------------------------------------

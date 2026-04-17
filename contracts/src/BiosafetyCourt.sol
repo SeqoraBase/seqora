@@ -522,35 +522,29 @@ contract BiosafetyCourt is
         // --- Effects: close the dispute ---
         d.resolvedAt = uint64(block.timestamp);
         d.outcome = outcome;
-        openDisputeOf[d.tokenId] = 0;
+        uint256 tokenId_ = d.tokenId;
+        address raiser_ = d.raiser;
+        openDisputeOf[tokenId_] = 0;
 
-        // Release the locked dispute bond for the raiser (sec-audit H-02 2026-04-16).
+        // Release the locked dispute bond for the raiser.
         // All terminal outcomes — UpheldTakedown, Dismissed, Settled — free the lock.
-        _disputeBondLocked[d.raiser] -= SeqoraTypes.DISPUTE_BOND;
+        _disputeBondLocked[raiser_] -= SeqoraTypes.DISPUTE_BOND;
 
         uint128 disputerReward = 0;
         uint128 treasuryCut = 0;
         uint128 reviewerCut = 0;
 
-        SeqoraTypes.ReviewerStake storage raiserStake = _stakes[d.raiser];
-
         if (outcome == SeqoraTypes.DisputeOutcome.UpheldTakedown) {
             // Pre-check: bail if the tokenId is already frozen via a concurrent Safety Council
             // action. Without this guard `_setFreezeActive` overwrites the existing freeze
             // record (resetting `appliedAt` / `expiresAt`), which could extend or shorten the
-            // 30-day ratification window depending on timing (sec-audit H-01 2026-04-16).
-            (bool alreadyFrozen,) = _isFrozen(d.tokenId);
-            if (alreadyFrozen) revert FreezeAlreadyActive(d.tokenId);
-            // Apply a freeze (same state machine the Safety Council uses).
-            _setFreezeActive(d.tokenId, d.reason);
-            // Disputer keeps their earmarked bond. (Slash pool is zero in v1 — no adverse
-            // reviewer identification. `disputerReward` accounts for optional top-up from
-            // the treasury in v2.)
+            // 30-day ratification window depending on timing.
+            (bool alreadyFrozen,) = _isFrozen(tokenId_);
+            if (alreadyFrozen) revert FreezeAlreadyActive(tokenId_);
+            _setFreezeActive(tokenId_, d.reason);
             disputerReward = 0;
         } else if (outcome == SeqoraTypes.DisputeOutcome.Dismissed) {
-            // Slash DISPUTE_BOND from raiser's stake. Guard against the edge case where the
-            // stake was unstaked mid-cooldown and now sits below DISPUTE_BOND — cap at current
-            // bond.
+            SeqoraTypes.ReviewerStake storage raiserStake = _stakes[raiser_];
             uint128 slashed = raiserStake.bond >= SeqoraTypes.DISPUTE_BOND ? SeqoraTypes.DISPUTE_BOND : raiserStake.bond;
             if (slashed > 0) {
                 unchecked {
@@ -558,25 +552,20 @@ contract BiosafetyCourt is
                 }
                 treasuryCut = uint128((uint256(slashed) * SeqoraTypes.DISMISSAL_TREASURY_CUT_BPS) / SeqoraTypes.BPS);
                 reviewerCut = uint128((uint256(slashed) * SeqoraTypes.DISMISSAL_REVIEWER_CUT_BPS) / SeqoraTypes.BPS);
-                // Any rounding residue folds into the treasury (safer default).
                 uint128 residue = slashed - treasuryCut - reviewerCut;
                 treasuryCut += residue;
 
-                emit ReviewerSlashed(d.raiser, slashed, caseId);
+                emit ReviewerSlashed(raiser_, slashed, caseId);
             }
         }
         // Settled: no movement.
 
-        // Account treasury ETH into `treasuryAccrued` (pull pattern to avoid inline transfer
-        // re-entry with a malicious owner-controlled recipient).
         if (treasuryCut > 0) treasuryAccrued += treasuryCut;
-        // Reviewer cut in v1 is the owner (arbitrator). Pull-paid via `withdrawReviewerCut`
-        // to avoid re-entry on resolution.
         if (reviewerCut > 0) _reviewerCutAccrued += reviewerCut;
 
         emit DisputeResolved(caseId, outcome);
         if (treasuryCut > 0 || reviewerCut > 0 || disputerReward > 0) {
-            emit DisputeSettlement(caseId, d.raiser, disputerReward, treasuryCut, reviewerCut);
+            emit DisputeSettlement(caseId, raiser_, disputerReward, treasuryCut, reviewerCut);
         }
         // disputerReward currently always 0 in v1 — no transfer required.
     }

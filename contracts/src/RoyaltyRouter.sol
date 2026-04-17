@@ -270,18 +270,13 @@ contract RoyaltyRouter is IRoyaltyRouter, IHooks, Ownable2Step, ReentrancyGuard 
         view
         returns (address receiver, uint256 royaltyAmount)
     {
-        if (!DESIGN_REGISTRY.isRegistered(tokenId)) return (address(0), 0);
-        SeqoraTypes.Design memory d = DESIGN_REGISTRY.getDesign(tokenId);
-
-        // Splits contract is the preferred recipient; RoyaltyRule.recipient is the fallback. If
-        // both are zero and royalty > 0, we return (0, 0) — marketplaces MUST treat that as
-        // "no royalty enforced at this endpoint" and NOT send funds to address(0).
-        address splits = _splitsOf[tokenId];
-        receiver = splits != address(0) ? splits : d.royalty.recipient;
-
-        // bps is bounded at mint time (`DesignRegistry` enforces <= MAX_ROYALTY_BPS = 2500).
-        // Solidity 0.8 checked math covers the multiply overflow edge (salePrice <= 2^256 / 2500).
-        royaltyAmount = (salePrice * d.royalty.bps) / SeqoraTypes.BPS;
+        try DESIGN_REGISTRY.getDesign(tokenId) returns (SeqoraTypes.Design memory d) {
+            address splits = _splitsOf[tokenId];
+            receiver = splits != address(0) ? splits : d.royalty.recipient;
+            royaltyAmount = (salePrice * d.royalty.bps) / SeqoraTypes.BPS;
+        } catch {
+            return (address(0), 0);
+        }
     }
 
     // -------------------------------------------------------------------------

@@ -324,8 +324,6 @@ contract LicenseRegistry is
         if (!t.active) revert TemplateInactive(licenseId);
 
         // --- Design existence + authorisation ---
-        // The design registry is the source of truth for who may license a tokenId.
-        // Reads a tiny projection (registrant) rather than the full struct to minimise calldata.
         if (!designRegistry.isRegistered(tokenId)) revert UnknownDesign(tokenId);
         address registrant = designRegistry.getDesign(tokenId).registrant;
 
@@ -334,7 +332,8 @@ contract LicenseRegistry is
         }
 
         // --- Exclusivity guard ---
-        if (t.pilFlags & SeqoraTypes.PIL_EXCLUSIVE != 0) {
+        uint16 pilFlags = t.pilFlags;
+        if (pilFlags & SeqoraTypes.PIL_EXCLUSIVE != 0) {
             uint256 existing = _exclusiveHolder[tokenId];
             if (existing != 0 && _isLicenseLive(existing)) {
                 revert ExclusiveAlreadyGranted(tokenId, existing);
@@ -386,7 +385,7 @@ contract LicenseRegistry is
         l.feePaid = feePaid;
         // l.revoked = false (default)
 
-        if (t.pilFlags & SeqoraTypes.PIL_EXCLUSIVE != 0) {
+        if (pilFlags & SeqoraTypes.PIL_EXCLUSIVE != 0) {
             _exclusiveHolder[tokenId] = licenseTokenId;
         }
 
