@@ -782,6 +782,49 @@ contract RoyaltyRouter_HookIntegration is RoyaltyRouterBase {
         assertEq(usdc.balanceOf(FALLBACK_RECIPIENT), 0);
     }
 
+    function test_Hook_ForfeitsRoyaltyToTreasury_WhenPayoutTargetZero_Defensive() public {
+        // Defensive-fallback coverage: the `payoutTarget == address(0)` branch inside afterSwap
+        // (royalty > 0 && resolver returns zero) cannot be reached via the happy registry path
+        // because RoyaltyRule validation rejects bps>0 && recipient==0 at register time. To exercise
+        // the defensive sink that funnels royalty to TREASURY (rather than reverting the swap), we
+        // spoof DESIGN_REGISTRY.getDesign via vm.mockCall to return a recipient=0, bps>0 rule.
+        uint256 tid = _registerDesign(BOB, keccak256("defensive-sink"), 500, FALLBACK_RECIPIENT);
+        // Leave _splitsOf[tid] unset so the resolver falls through to rule.recipient.
+
+        SeqoraTypes.RoyaltyRule memory r =
+            SeqoraTypes.RoyaltyRule({ recipient: address(0), bps: 500, parentSplitBps: 0 });
+        SeqoraTypes.Design memory crafted = SeqoraTypes.Design({
+            canonicalHash: keccak256("defensive-sink"),
+            ga4ghSeqhash: bytes32(0),
+            arweaveTx: "ar://tx",
+            ceramicStreamId: "ceramic://tx",
+            royalty: r,
+            screeningAttestationUID: bytes32(uint256(1)),
+            parentTokenIds: new bytes32[](0),
+            registrant: BOB,
+            registeredAt: uint64(block.timestamp)
+        });
+        vm.mockCall(
+            address(registry), abi.encodeWithSelector(IDesignRegistry.getDesign.selector, tid), abi.encode(crafted)
+        );
+
+        uint256 absAmount = 1_000_000;
+        uint256 royalty = (absAmount * 500) / SeqoraTypes.BPS;
+        uint256 fee = (absAmount * SeqoraTypes.PROTOCOL_FEE_BPS) / SeqoraTypes.BPS;
+        usdc.mint(address(poolManager), royalty + fee);
+
+        PoolKey memory key = _defaultPoolKey();
+        SwapParams memory p = _swapParamsUsdcInput(-int256(absAmount));
+        poolManager.simulateSwap(IHooks(address(router)), address(this), key, p, abi.encode(tid));
+
+        // Both protocol fee and royalty end up at TREASURY because the payout target resolved to 0.
+        assertEq(usdc.balanceOf(TREASURY), fee + royalty, "treasury absorbs royalty when payout target is zero");
+        assertEq(usdc.balanceOf(FALLBACK_RECIPIENT), 0);
+        assertEq(usdc.balanceOf(SPLITS), 0);
+
+        vm.clearMockedCalls();
+    }
+
     function test_Hook_Paused_ShortCircuits() public {
         vm.prank(GOVERNANCE);
         router.setHookCollectionPaused(true);
