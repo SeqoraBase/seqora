@@ -82,4 +82,4 @@ jobs:
 
       - name: Build
         working-directory: frontend
-        run: npx next build
+        run: npm run build
