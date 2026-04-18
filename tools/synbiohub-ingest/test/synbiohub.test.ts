@@ -84,14 +84,17 @@ describe("SynBioHubClient", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
-  it("throws on non-2xx responses", async () => {
+  it("throws on non-2xx responses (after exhausting retries on 5xx)", async () => {
     const fetchImpl = vi.fn(async () => new Response("nope", { status: 502, statusText: "Bad Gateway" }));
     const client = new SynBioHubClient({
       instance: "https://example.org",
       requestDelayMs: 0,
+      retryBackoffMs: 0,
       fetchImpl: fetchImpl as unknown as typeof fetch,
     });
     await expect(client.fetchSbolRdfXml("https://example.org/public/x/1")).rejects.toThrow(/HTTP 502/);
+    // 3 retry attempts by default on 5xx.
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
   });
 
   it("sends a User-Agent identifying Seqora", async () => {
