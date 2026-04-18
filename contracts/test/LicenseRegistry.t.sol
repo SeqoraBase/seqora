@@ -306,7 +306,7 @@ contract LicenseRegistry_Grant_Test is LicenseRegistryHarness {
 
     function test_Grant_RevertsWhen_NotAuthorized() public {
         vm.prank(CAROL);
-        vm.expectRevert(abi.encodeWithSelector(LicenseRegistry.NotAuthorized.selector, CAROL));
+        vm.expectRevert(abi.encodeWithSelector(SeqoraErrors.NotAuthorized.selector, CAROL));
         licenses.grantLicense(designId, Tmpl.OPEN_MTA, BOB, 0, 0);
     }
 
@@ -418,14 +418,14 @@ contract LicenseRegistry_Revoke_Test is LicenseRegistryHarness {
 
     function test_Revoke_RevertsWhen_UnauthorizedCaller() public {
         vm.prank(CAROL);
-        vm.expectRevert(abi.encodeWithSelector(LicenseRegistry.NotAuthorized.selector, CAROL));
+        vm.expectRevert(abi.encodeWithSelector(SeqoraErrors.NotAuthorized.selector, CAROL));
         licenses.revokeLicense(lt, "nope");
     }
 
     function test_Revoke_RevertsWhen_LicenseOwnerCalls() public {
         // License owner (BOB) is NOT authorized to self-revoke.
         vm.prank(BOB);
-        vm.expectRevert(abi.encodeWithSelector(LicenseRegistry.NotAuthorized.selector, BOB));
+        vm.expectRevert(abi.encodeWithSelector(SeqoraErrors.NotAuthorized.selector, BOB));
         licenses.revokeLicense(lt, "no-self");
     }
 

@@ -111,10 +111,6 @@ contract LicenseRegistry is
     /// @notice Thrown on any attempt to call `renounceOwnership` — governance bricking disabled.
     error RenounceDisabled();
 
-    /// @notice Thrown when caller is not authorised to perform the action.
-    /// @param caller msg.sender.
-    error NotAuthorized(address caller);
-
     /// @notice Thrown when `pilFlags` contains bits outside `PIL_V1_MASK`.
     /// @param pilFlags The supplied bitfield.
     error InvalidPilFlags(uint16 pilFlags);
@@ -328,7 +324,7 @@ contract LicenseRegistry is
         address registrant = designRegistry.getDesign(tokenId).registrant;
 
         if (msg.sender != registrant && msg.sender != owner()) {
-            revert NotAuthorized(msg.sender);
+            revert SeqoraErrors.NotAuthorized(msg.sender);
         }
 
         // --- Exclusivity guard ---
@@ -416,7 +412,7 @@ contract LicenseRegistry is
 
         address registrant = designRegistry.getDesign(l.tokenId).registrant;
         if (msg.sender != registrant && msg.sender != owner()) {
-            revert NotAuthorized(msg.sender);
+            revert SeqoraErrors.NotAuthorized(msg.sender);
         }
 
         l.revoked = true;
