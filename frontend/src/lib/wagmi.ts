@@ -10,10 +10,11 @@ import { base, baseSepolia } from "wagmi/chains";
 const isTestnet = process.env.NEXT_PUBLIC_CHAIN === "testnet";
 export const activeChain = isTestnet ? baseSepolia : base;
 
+// Phantom is intentionally NOT listed here: its EVM provider surfaces Solana
+// accounts and prompts Solana-only users to sign EVM transactions.
 const walletConnectors = [
   metaMask(),
   coinbaseWallet({ appName: "Seqora", preference: { options: "all" } }),
-  injected({ shimDisconnect: false, target: "phantom" }),
   injected({ shimDisconnect: false, target: "rabby" }),
   injected({ shimDisconnect: true }),
 ];
