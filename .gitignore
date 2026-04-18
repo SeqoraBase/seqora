@@ -9,8 +9,8 @@ CLAUDE.md
 contracts/out/
 contracts/cache/
 contracts/broadcast/
-contracts/.gas-snapshot
 contracts/lcov.info
+# NOTE: contracts/.gas-snapshot is committed so CI's `forge snapshot --check` has a baseline.
 
 # Node / frontend
 node_modules/
@@ -27,7 +27,7 @@ frontend/src/content/spec.md
 !.env.example
 !.env.local.example
 
-# Foundry snapshot backups (the live snapshot above is ignored already)
+# Foundry snapshot backups
 contracts/.gas-snapshot.old
 
 # OS / editor

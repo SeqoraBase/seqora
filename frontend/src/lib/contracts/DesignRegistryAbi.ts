@@ -1,5 +1,21 @@
 export const DesignRegistryAbi = [
   {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "baseUri_",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "screening_",
+        "type": "address",
+        "internalType": "contract IScreeningAttestations"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
     "type": "function",
     "name": "SCREENING",
     "inputs": [],

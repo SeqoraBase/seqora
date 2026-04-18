@@ -1,5 +1,26 @@
 export const ScreeningAttestationsAbi = [
   {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "eas_",
+        "type": "address",
+        "internalType": "contract IEAS"
+      },
+      {
+        "name": "schemaUID_",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "owner_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
     "type": "function",
     "name": "acceptOwnership",
     "inputs": [],

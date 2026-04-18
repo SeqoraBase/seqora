@@ -1,5 +1,14 @@
 export const BiosafetyCourtAbi = [
   {
+    "type": "constructor",
+    "inputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "receive",
+    "stateMutability": "payable"
+  },
+  {
     "type": "function",
     "name": "UPGRADE_INTERFACE_VERSION",
     "inputs": [],
@@ -1271,6 +1280,11 @@ export const BiosafetyCourtAbi = [
   {
     "type": "error",
     "name": "RenounceDisabled",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SafetyCouncilMatchesOwner",
     "inputs": []
   },
   {
