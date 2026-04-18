@@ -228,6 +228,16 @@ contract BiosafetyCourt is
     /// @notice Emitted inside `_authorizeUpgrade` before OZ's ERC-1822 check (mirrors LicenseRegistry).
     event UpgradeAuthorized(address indexed newImplementation);
 
+    /// @notice Emitted when accrued treasury ETH is pulled out to the governance-set treasury.
+    /// @param to The treasury recipient at the time of withdrawal.
+    /// @param amount Wei transferred.
+    event TreasuryWithdrawn(address indexed to, uint256 amount);
+
+    /// @notice Emitted when accrued reviewer-cut ETH is pulled out to the v1 arbitrator (owner).
+    /// @param to Recipient of the withdrawal (== `owner()` in v1).
+    /// @param amount Wei transferred.
+    event ReviewerCutWithdrawn(address indexed to, uint256 amount);
+
     // -------------------------------------------------------------------------
     // Storage (UUPS — any addition MUST append to preserve slot layout)
     // -------------------------------------------------------------------------
@@ -501,11 +511,15 @@ contract BiosafetyCourt is
     ///          there is no identified "adverse reviewer set" so the slash pool is zero; the
     ///          disputer receives their bond back only. Slashing of specific reviewers is
     ///          left to v2's stake-weighted voting mechanism.
-    ///        - `Dismissed` — disputer forfeits `DISPUTE_BOND` from stake; split
-    ///          `DISMISSAL_TREASURY_CUT_BPS` / `DISMISSAL_REVIEWER_CUT_BPS` between treasury
-    ///          and the resolving arbitrator (== owner in v1; treasury receives both shares
-    ///          in effect, but we keep the bps split wiring for v2 when the reviewer role
-    ///          separates from the owner).
+    ///        - `Dismissed` — disputer forfeits `DISPUTE_BOND` from stake; the slashed
+    ///          amount is split per `DISMISSAL_TREASURY_CUT_BPS` / `DISMISSAL_REVIEWER_CUT_BPS`
+    ///          into two separate accruals: `treasuryAccrued` (withdrawable by anyone to the
+    ///          governance-set treasury via `withdrawTreasury`) and `_reviewerCutAccrued`
+    ///          (withdrawable only by the owner via `withdrawReviewerCut`). Any rounding
+    ///          residue is folded into the treasury cut. In v1 the resolving arbitrator is
+    ///          `owner()`, so `withdrawReviewerCut` routes the reviewer share to the DAO
+    ///          multisig; in v2 the reviewer role separates from the owner and the bps split
+    ///          is already wired for that migration.
     ///        - `Settled` — disputer's bond restored, no slashing, no freeze. Off-ramp for
     ///          mutually-agreed withdrawals.
     function resolveDispute(uint256 caseId, SeqoraTypes.DisputeOutcome outcome)
@@ -688,7 +702,9 @@ contract BiosafetyCourt is
         uint128 amount = treasuryAccrued;
         if (amount == 0) revert SeqoraErrors.ZeroValue();
         treasuryAccrued = 0;
-        _safeSendETH(treasury, amount);
+        address to = treasury;
+        emit TreasuryWithdrawn(to, amount);
+        _safeSendETH(to, amount);
     }
 
     /// @notice Pull-pay accrued reviewer-cut ETH to the owner (v1 arbitrator).
@@ -697,7 +713,9 @@ contract BiosafetyCourt is
         uint128 amount = _reviewerCutAccrued;
         if (amount == 0) revert SeqoraErrors.ZeroValue();
         _reviewerCutAccrued = 0;
-        _safeSendETH(owner(), amount);
+        address to = owner();
+        emit ReviewerCutWithdrawn(to, amount);
+        _safeSendETH(to, amount);
     }
 
     /// @notice Halt new disputes + dispute resolution. Does NOT halt Safety Council freezes
