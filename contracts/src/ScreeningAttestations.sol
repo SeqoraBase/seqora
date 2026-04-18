@@ -82,9 +82,6 @@ contract ScreeningAttestations is IScreeningAttestations, Ownable2Step, Pausable
     /// @notice Thrown when the attestation's embedded `registrant` does not match the call arg.
     error RegistrantMismatch();
 
-    /// @notice Thrown when the attestation's embedded `canonicalHash` does not match the call arg.
-    error CanonicalHashMismatch();
-
     /// @notice Thrown when the decoded payload is shorter than the expected schema length.
     error MalformedAttestationData();
 

@@ -135,10 +135,6 @@ contract BiosafetyCourt is
     /// @notice Thrown on any attempt to call `renounceOwnership` — governance bricking disabled.
     error RenounceDisabled();
 
-    /// @notice Thrown when caller is not the Safety Council for a council-only action.
-    /// @dev Parallel to interface's `NotSafetyCouncil`; used where the check is implementation-internal.
-    error NotSafetyCouncilError(address caller);
-
     /// @notice Thrown when a reviewer's bond (before or after a stake action) falls below the minimum.
     error StakeTooLow(uint128 supplied, uint128 minimum);
 
