@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from "node:fs";
 import { dirname } from "node:path";
 
 export interface ManifestEntry {
@@ -20,6 +20,12 @@ export interface ManifestEntry {
   tokenId: string;
   /** Number of triples canonicalized. */
   tripleCount: number;
+  /**
+   * GA4GH refget v1.0 sequence identifier, `SQ.<base64url-24>`. `null` when
+   * the part has no `sbol:elements` literal (e.g., a composite component).
+   * Optional for backward compatibility with manifests produced by v0.1.
+   */
+  ga4ghSeqhash?: string | null;
   /** ISO timestamp of ingest. */
   ingestedAt: string;
   /** Status of this entry. `pending` until a claim is processed. */
@@ -45,9 +51,16 @@ export function readManifest(path: string): Manifest | null {
   return parsed;
 }
 
+/**
+ * Atomically write the manifest: write to `<path>.tmp`, fsync-equivalent via
+ * `writeFileSync`, then rename. This avoids leaving a half-written JSON file
+ * if the process is killed during a checkpoint flush.
+ */
 export function writeManifest(path: string, manifest: Manifest): void {
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, JSON.stringify(manifest, null, 2) + "\n", "utf8");
+  const tmp = `${path}.tmp`;
+  writeFileSync(tmp, JSON.stringify(manifest, null, 2) + "\n", "utf8");
+  renameSync(tmp, path);
 }
 
 /**
@@ -59,4 +72,20 @@ export function mergeEntries(existing: ManifestEntry[], incoming: ManifestEntry[
   for (const e of existing) byUri.set(e.sourceUri, e);
   for (const e of incoming) byUri.set(e.sourceUri, e);
   return [...byUri.values()].sort((a, b) => a.sourceUri.localeCompare(b.sourceUri));
+}
+
+/**
+ * Return the set of `sourceUri` values that should be skipped on a `--resume`
+ * run. By default, any non-error entry is skipped. If `force` is true, an
+ * empty set is returned so every part is re-ingested.
+ */
+export function resumableSkipSet(existing: ManifestEntry[], force: boolean): Set<string> {
+  if (force) return new Set();
+  const skip = new Set<string>();
+  for (const e of existing) {
+    if (e.status === "pending" || e.status === "claimed") {
+      skip.add(e.sourceUri);
+    }
+  }
+  return skip;
 }

@@ -14,19 +14,30 @@ SynBioHub endpoint.
 ```
 npm install
 npm run build
-npx seqora-synbiohub-ingest --instance https://synbiohub.org --limit 100 --out ./out/manifest.json
+npx seqora-synbiohub-ingest --instance https://synbiohub.org --limit 100 --out ./out/manifest.json \
+    --log ./out/ingest.ndjson --resume
 ```
+
+Run `npx seqora-synbiohub-ingest --help` for the full flag reference,
+including `--max-response-bytes`, `--max-retries`, `--checkpoint-every`,
+`--resume`, and `--force`.
 
 ## What it does
 
 1. Queries the SynBioHub SPARQL endpoint for public parts.
-2. Fetches each part's SBOL3 RDF via `/sbol`.
+2. Fetches each part's SBOL3 RDF via `/sbol`, with:
+   - pinned redirects (no cross-origin follows — blocks SSRF via 302),
+   - a per-response size cap (default 16 MiB),
+   - exponential-backoff retry on 5xx and network errors.
 3. Canonicalizes the RDF with URDNA2015 and computes
    `canonicalHash = keccak256(canonicalized N-Quads UTF-8)`.
-4. Resolves author IRIs to ORCID identifiers where possible.
-5. Writes a manifest of pending-claim records — one per part — to the
-   output file. Re-runs are idempotent: the same part yields the same
-   `canonicalHash` on every run.
+4. Computes a GA4GH refget v1.0 `ga4ghSeqhash` over the `sbol:elements`
+   literal when present (optional; `null` for composite parts).
+5. Resolves author IRIs to ORCID identifiers where possible.
+6. Writes a manifest of pending-claim records — one per part — to the
+   output file, checkpointing every N parts so a SIGKILL loses at most
+   N entries. Re-runs with `--resume` skip parts already ingested.
+   The same part yields the same `canonicalHash` on every run.
 
 ## Tests
 

@@ -61,7 +61,9 @@ describe("ingest (end-to-end with mocked network)", () => {
           { subject: { type: "uri", value: "https://synbiohub.org/public/igem/OK/1" } },
         ]),
       )
-      // BAD: SBOL fetch fails
+      // BAD: SBOL fetch fails on every retry attempt.
+      .mockResolvedValueOnce(new Response("oops", { status: 500, statusText: "err" }))
+      .mockResolvedValueOnce(new Response("oops", { status: 500, statusText: "err" }))
       .mockResolvedValueOnce(new Response("oops", { status: 500, statusText: "err" }))
       // OK: SBOL fetch succeeds
       .mockResolvedValueOnce(new Response(fixture, { status: 200 }))
@@ -72,6 +74,7 @@ describe("ingest (end-to-end with mocked network)", () => {
       instance: "https://synbiohub.org",
       pageSize: 2,
       requestDelayMs: 0,
+      retryBackoffMs: 0,
       fetchImpl: fetchImpl as unknown as typeof fetch,
     });
 
