@@ -1,0 +1,35 @@
+{
+  "name": "@seqora/synbiohub-ingest",
+  "version": "0.1.0",
+  "private": true,
+  "description": "One-way ingest from public SynBioHub instances into a Seqora pending-claim manifest.",
+  "type": "module",
+  "bin": {
+    "seqora-synbiohub-ingest": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "typecheck": "tsc -p . --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "start": "node dist/cli.js",
+    "dev": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@noble/hashes": "^1.4.0",
+    "n3": "^1.17.4",
+    "rdf-canonize": "^4.0.1",
+    "rdfxml-streaming-parser": "^3.0.0"
+  },
+  "devDependencies": {
+    "@rdfjs/types": "^2.0.1",
+    "@types/n3": "^1.16.4",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.5.0",
+    "vitest": "^2.1.9"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

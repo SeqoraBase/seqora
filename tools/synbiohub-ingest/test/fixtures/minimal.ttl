@@ -1,0 +1,17 @@
+@prefix sbol: <http://sbols.org/v3#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+
+<https://synbiohub.org/public/igem/BBa_E0040/1> a sbol:Component ;
+  sbol:displayId "BBa_E0040" ;
+  sbol:version "1" ;
+  dcterms:title "GFP" ;
+  sbol:type <http://www.biopax.org/release/biopax-level3.owl#DnaRegion> ;
+  sbol:role <http://identifiers.org/so/SO:0000316> ;
+  sbol:hasSequence <https://synbiohub.org/public/igem/BBa_E0040_seq/1> ;
+  prov:wasAttributedTo <https://orcid.org/0000-0002-1825-0097> .
+
+<https://synbiohub.org/public/igem/BBa_E0040_seq/1> a sbol:Sequence ;
+  sbol:displayId "BBa_E0040_seq" ;
+  sbol:elements "ATGCGTAAAGGAGAAGAACTTTTCACTGGAGTTGTCCCAATTCTTGTT" ;
+  sbol:encoding <http://www.chem.qmul.ac.uk/iubmb/misc/naseq.html> .
