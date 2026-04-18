@@ -1,9 +1,16 @@
 import { describe, it, expect, vi } from "vitest";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { ingest } from "../src/ingest.js";
-import { resumableSkipSet, type ManifestEntry } from "../src/manifest.js";
+import {
+  readManifest,
+  resumableSkipSet,
+  writeManifest,
+  type Manifest,
+  type ManifestEntry,
+} from "../src/manifest.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixture = readFileSync(join(__dirname, "fixtures", "minimal.rdf"), "utf8");
@@ -89,6 +96,42 @@ describe("resumableSkipSet", () => {
   it("returns an empty set when force=true", () => {
     const skip = resumableSkipSet(entries, true);
     expect(skip.size).toBe(0);
+  });
+});
+
+describe("manifest round-trip with claim metadata", () => {
+  it("preserves claimTxHash and claimedAt through write→read", () => {
+    const tmp = mkdtempSync(join(tmpdir(), "manifest-rt-"));
+    try {
+      const path = join(tmp, "m.json");
+      const manifest: Manifest = {
+        version: 1,
+        generatedAt: "2026-04-19T00:00:00.000Z",
+        sourceInstance: "https://s.org",
+        entries: [
+          {
+            sourceUri: "https://s.org/p/A",
+            sourceInstance: "https://s.org",
+            canonicalHash: ("0x" + "a".repeat(64)) as `0x${string}`,
+            tokenId: "1",
+            tripleCount: 3,
+            ingestedAt: "2026-04-18T12:00:00.000Z",
+            status: "claimed",
+            claimTxHash: ("0x" + "d".repeat(64)) as `0x${string}`,
+            claimedAt: "2026-04-19T01:23:45.000Z",
+          },
+        ],
+      };
+
+      writeManifest(path, manifest);
+      const round = readManifest(path);
+
+      expect(round?.entries[0]?.status).toBe("claimed");
+      expect(round?.entries[0]?.claimTxHash).toBe(manifest.entries[0]!.claimTxHash);
+      expect(round?.entries[0]?.claimedAt).toBe("2026-04-19T01:23:45.000Z");
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
   });
 });
 
