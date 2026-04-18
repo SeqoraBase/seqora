@@ -89,7 +89,9 @@ contract DesignRegistryHandler is CommonBase, StdCheats, StdUtils {
         if (_registered.length == 0) return;
 
         address actor = _actors[actorIdx % _actors.length];
-        uint256 parentTokenId = _registered[parentIdx % _registered.length];
+        // Pre-bound parentIdx to the registered pool so later additions can't overflow.
+        uint256 parentCursor = parentIdx % _registered.length;
+        uint256 parentTokenId = _registered[parentCursor];
 
         bytes32 canonicalHash =
             bytes32(uint256(keccak256(abi.encode("f", seed, _registered.length))) & type(uint64).max);
@@ -111,7 +113,7 @@ contract DesignRegistryHandler is CommonBase, StdCheats, StdUtils {
         bytes32[] memory additional = new bytes32[](n);
         uint256 filled;
         for (uint256 i = 0; i < n; i++) {
-            uint256 pid = _registered[(parentIdx + i + 1) % _registered.length];
+            uint256 pid = _registered[(parentCursor + i + 1) % _registered.length];
             if (pid == parentTokenId) continue;
             if (uint256(canonicalHash) == pid) continue;
             // Avoid duplicates within additional

@@ -1,0 +1,329 @@
+{
+  "storage": [
+    {
+      "astId": 2038,
+      "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+      "label": "designRegistry",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_contract(IDesignRegistry)4023"
+    },
+    {
+      "astId": 2041,
+      "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+      "label": "safetyCouncil",
+      "offset": 0,
+      "slot": "1",
+      "type": "t_address"
+    },
+    {
+      "astId": 2044,
+      "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+      "label": "treasury",
+      "offset": 0,
+      "slot": "2",
+      "type": "t_address"
+    },
+    {
+      "astId": 2047,
+      "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+      "label": "nextDisputeId",
+      "offset": 0,
+      "slot": "3",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 2053,
+      "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+      "label": "_disputes",
+      "offset": 0,
+      "slot": "4",
+      "type": "t_mapping(t_uint256,t_struct(Dispute)4318_storage)"
+    },
+    {
+      "astId": 2058,
+      "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+      "label": "openDisputeOf",
+      "offset": 0,
+      "slot": "5",
+      "type": "t_mapping(t_uint256,t_uint256)"
+    },
+    {
+      "astId": 2064,
+      "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+      "label": "_freezes",
+      "offset": 0,
+      "slot": "6",
+      "type": "t_mapping(t_uint256,t_struct(SafetyFreeze)4329_storage)"
+    },
+    {
+      "astId": 2070,
+      "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+      "label": "_stakes",
+      "offset": 0,
+      "slot": "7",
+      "type": "t_mapping(t_address,t_struct(ReviewerStake)4301_storage)"
+    },
+    {
+      "astId": 2075,
+      "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+      "label": "pendingDeposits",
+      "offset": 0,
+      "slot": "8",
+      "type": "t_mapping(t_address,t_uint128)"
+    },
+    {
+      "astId": 2078,
+      "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+      "label": "treasuryAccrued",
+      "offset": 0,
+      "slot": "9",
+      "type": "t_uint128"
+    },
+    {
+      "astId": 2081,
+      "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+      "label": "_reviewerCutAccrued",
+      "offset": 16,
+      "slot": "9",
+      "type": "t_uint128"
+    },
+    {
+      "astId": 2086,
+      "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+      "label": "_disputeBondLocked",
+      "offset": 0,
+      "slot": "10",
+      "type": "t_mapping(t_address,t_uint128)"
+    },
+    {
+      "astId": 2091,
+      "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+      "label": "__gap",
+      "offset": 0,
+      "slot": "11",
+      "type": "t_array(t_uint256)46_storage"
+    }
+  ],
+  "types": {
+    "t_address": {
+      "encoding": "inplace",
+      "label": "address",
+      "numberOfBytes": "20"
+    },
+    "t_array(t_uint256)46_storage": {
+      "encoding": "inplace",
+      "label": "uint256[46]",
+      "numberOfBytes": "1472",
+      "base": "t_uint256"
+    },
+    "t_bytes32": {
+      "encoding": "inplace",
+      "label": "bytes32",
+      "numberOfBytes": "32"
+    },
+    "t_contract(IDesignRegistry)4023": {
+      "encoding": "inplace",
+      "label": "contract IDesignRegistry",
+      "numberOfBytes": "20"
+    },
+    "t_enum(DisputeOutcome)4153": {
+      "encoding": "inplace",
+      "label": "enum SeqoraTypes.DisputeOutcome",
+      "numberOfBytes": "1"
+    },
+    "t_enum(FreezeStatus)4160": {
+      "encoding": "inplace",
+      "label": "enum SeqoraTypes.FreezeStatus",
+      "numberOfBytes": "1"
+    },
+    "t_mapping(t_address,t_struct(ReviewerStake)4301_storage)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => struct SeqoraTypes.ReviewerStake)",
+      "numberOfBytes": "32",
+      "value": "t_struct(ReviewerStake)4301_storage"
+    },
+    "t_mapping(t_address,t_uint128)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => uint128)",
+      "numberOfBytes": "32",
+      "value": "t_uint128"
+    },
+    "t_mapping(t_uint256,t_struct(Dispute)4318_storage)": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => struct SeqoraTypes.Dispute)",
+      "numberOfBytes": "32",
+      "value": "t_struct(Dispute)4318_storage"
+    },
+    "t_mapping(t_uint256,t_struct(SafetyFreeze)4329_storage)": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => struct SeqoraTypes.SafetyFreeze)",
+      "numberOfBytes": "32",
+      "value": "t_struct(SafetyFreeze)4329_storage"
+    },
+    "t_mapping(t_uint256,t_uint256)": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => uint256)",
+      "numberOfBytes": "32",
+      "value": "t_uint256"
+    },
+    "t_string_storage": {
+      "encoding": "bytes",
+      "label": "string",
+      "numberOfBytes": "32"
+    },
+    "t_struct(Dispute)4318_storage": {
+      "encoding": "inplace",
+      "label": "struct SeqoraTypes.Dispute",
+      "numberOfBytes": "160",
+      "members": [
+        {
+          "astId": 4304,
+          "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+          "label": "tokenId",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_uint256"
+        },
+        {
+          "astId": 4306,
+          "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+          "label": "raiser",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_address"
+        },
+        {
+          "astId": 4308,
+          "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+          "label": "evidenceHash",
+          "offset": 0,
+          "slot": "2",
+          "type": "t_bytes32"
+        },
+        {
+          "astId": 4310,
+          "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+          "label": "reason",
+          "offset": 0,
+          "slot": "3",
+          "type": "t_string_storage"
+        },
+        {
+          "astId": 4312,
+          "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+          "label": "openedAt",
+          "offset": 0,
+          "slot": "4",
+          "type": "t_uint64"
+        },
+        {
+          "astId": 4314,
+          "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+          "label": "resolvedAt",
+          "offset": 8,
+          "slot": "4",
+          "type": "t_uint64"
+        },
+        {
+          "astId": 4317,
+          "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+          "label": "outcome",
+          "offset": 16,
+          "slot": "4",
+          "type": "t_enum(DisputeOutcome)4153"
+        }
+      ]
+    },
+    "t_struct(ReviewerStake)4301_storage": {
+      "encoding": "inplace",
+      "label": "struct SeqoraTypes.ReviewerStake",
+      "numberOfBytes": "32",
+      "members": [
+        {
+          "astId": 4296,
+          "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+          "label": "bond",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_uint128"
+        },
+        {
+          "astId": 4298,
+          "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+          "label": "stakedAt",
+          "offset": 16,
+          "slot": "0",
+          "type": "t_uint64"
+        },
+        {
+          "astId": 4300,
+          "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+          "label": "unstakeRequestedAt",
+          "offset": 24,
+          "slot": "0",
+          "type": "t_uint64"
+        }
+      ]
+    },
+    "t_struct(SafetyFreeze)4329_storage": {
+      "encoding": "inplace",
+      "label": "struct SeqoraTypes.SafetyFreeze",
+      "numberOfBytes": "64",
+      "members": [
+        {
+          "astId": 4322,
+          "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+          "label": "status",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_enum(FreezeStatus)4160"
+        },
+        {
+          "astId": 4324,
+          "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+          "label": "appliedAt",
+          "offset": 1,
+          "slot": "0",
+          "type": "t_uint64"
+        },
+        {
+          "astId": 4326,
+          "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+          "label": "expiresAt",
+          "offset": 9,
+          "slot": "0",
+          "type": "t_uint64"
+        },
+        {
+          "astId": 4328,
+          "contract": "src/BiosafetyCourt.sol:BiosafetyCourt",
+          "label": "reason",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_string_storage"
+        }
+      ]
+    },
+    "t_uint128": {
+      "encoding": "inplace",
+      "label": "uint128",
+      "numberOfBytes": "16"
+    },
+    "t_uint256": {
+      "encoding": "inplace",
+      "label": "uint256",
+      "numberOfBytes": "32"
+    },
+    "t_uint64": {
+      "encoding": "inplace",
+      "label": "uint64",
+      "numberOfBytes": "8"
+    }
+  }
+}

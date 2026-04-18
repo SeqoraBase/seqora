@@ -1,0 +1,301 @@
+{
+  "storage": [
+    {
+      "astId": 7366,
+      "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+      "label": "designRegistry",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_contract(IDesignRegistry)8859"
+    },
+    {
+      "astId": 7369,
+      "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+      "label": "feeRouter",
+      "offset": 0,
+      "slot": "1",
+      "type": "t_address"
+    },
+    {
+      "astId": 7372,
+      "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+      "label": "nextLicenseTokenId",
+      "offset": 0,
+      "slot": "2",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 7378,
+      "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+      "label": "_templates",
+      "offset": 0,
+      "slot": "3",
+      "type": "t_mapping(t_bytes32,t_struct(LicenseTemplate)9212_storage)"
+    },
+    {
+      "astId": 7384,
+      "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+      "label": "_licenses",
+      "offset": 0,
+      "slot": "4",
+      "type": "t_mapping(t_uint256,t_struct(License)9228_storage)"
+    },
+    {
+      "astId": 7389,
+      "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+      "label": "_exclusiveHolder",
+      "offset": 0,
+      "slot": "5",
+      "type": "t_mapping(t_uint256,t_uint256)"
+    },
+    {
+      "astId": 7397,
+      "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+      "label": "_licensesOf",
+      "offset": 0,
+      "slot": "6",
+      "type": "t_mapping(t_uint256,t_mapping(t_address,t_array(t_uint256)dyn_storage))"
+    },
+    {
+      "astId": 7402,
+      "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+      "label": "__gap",
+      "offset": 0,
+      "slot": "7",
+      "type": "t_array(t_uint256)44_storage"
+    }
+  ],
+  "types": {
+    "t_address": {
+      "encoding": "inplace",
+      "label": "address",
+      "numberOfBytes": "20"
+    },
+    "t_array(t_uint256)44_storage": {
+      "encoding": "inplace",
+      "label": "uint256[44]",
+      "numberOfBytes": "1408",
+      "base": "t_uint256"
+    },
+    "t_array(t_uint256)dyn_storage": {
+      "encoding": "dynamic_array",
+      "label": "uint256[]",
+      "numberOfBytes": "32",
+      "base": "t_uint256"
+    },
+    "t_bool": {
+      "encoding": "inplace",
+      "label": "bool",
+      "numberOfBytes": "1"
+    },
+    "t_bytes32": {
+      "encoding": "inplace",
+      "label": "bytes32",
+      "numberOfBytes": "32"
+    },
+    "t_contract(IDesignRegistry)8859": {
+      "encoding": "inplace",
+      "label": "contract IDesignRegistry",
+      "numberOfBytes": "20"
+    },
+    "t_mapping(t_address,t_array(t_uint256)dyn_storage)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => uint256[])",
+      "numberOfBytes": "32",
+      "value": "t_array(t_uint256)dyn_storage"
+    },
+    "t_mapping(t_bytes32,t_struct(LicenseTemplate)9212_storage)": {
+      "encoding": "mapping",
+      "key": "t_bytes32",
+      "label": "mapping(bytes32 => struct SeqoraTypes.LicenseTemplate)",
+      "numberOfBytes": "32",
+      "value": "t_struct(LicenseTemplate)9212_storage"
+    },
+    "t_mapping(t_uint256,t_mapping(t_address,t_array(t_uint256)dyn_storage))": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => mapping(address => uint256[]))",
+      "numberOfBytes": "32",
+      "value": "t_mapping(t_address,t_array(t_uint256)dyn_storage)"
+    },
+    "t_mapping(t_uint256,t_struct(License)9228_storage)": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => struct SeqoraTypes.License)",
+      "numberOfBytes": "32",
+      "value": "t_struct(License)9228_storage"
+    },
+    "t_mapping(t_uint256,t_uint256)": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => uint256)",
+      "numberOfBytes": "32",
+      "value": "t_uint256"
+    },
+    "t_string_storage": {
+      "encoding": "bytes",
+      "label": "string",
+      "numberOfBytes": "32"
+    },
+    "t_struct(License)9228_storage": {
+      "encoding": "inplace",
+      "label": "struct SeqoraTypes.License",
+      "numberOfBytes": "128",
+      "members": [
+        {
+          "astId": 9215,
+          "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+          "label": "tokenId",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_uint256"
+        },
+        {
+          "astId": 9217,
+          "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+          "label": "licenseId",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_bytes32"
+        },
+        {
+          "astId": 9219,
+          "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+          "label": "licensee",
+          "offset": 0,
+          "slot": "2",
+          "type": "t_address"
+        },
+        {
+          "astId": 9221,
+          "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+          "label": "grantedAt",
+          "offset": 20,
+          "slot": "2",
+          "type": "t_uint64"
+        },
+        {
+          "astId": 9223,
+          "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+          "label": "expiry",
+          "offset": 0,
+          "slot": "3",
+          "type": "t_uint64"
+        },
+        {
+          "astId": 9225,
+          "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+          "label": "feePaid",
+          "offset": 8,
+          "slot": "3",
+          "type": "t_uint128"
+        },
+        {
+          "astId": 9227,
+          "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+          "label": "revoked",
+          "offset": 24,
+          "slot": "3",
+          "type": "t_bool"
+        }
+      ]
+    },
+    "t_struct(LicenseTemplate)9212_storage": {
+      "encoding": "inplace",
+      "label": "struct SeqoraTypes.LicenseTemplate",
+      "numberOfBytes": "128",
+      "members": [
+        {
+          "astId": 9197,
+          "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+          "label": "licenseId",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_bytes32"
+        },
+        {
+          "astId": 9199,
+          "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+          "label": "name",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_string_storage"
+        },
+        {
+          "astId": 9201,
+          "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+          "label": "uri",
+          "offset": 0,
+          "slot": "2",
+          "type": "t_string_storage"
+        },
+        {
+          "astId": 9203,
+          "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+          "label": "commercialUse",
+          "offset": 0,
+          "slot": "3",
+          "type": "t_bool"
+        },
+        {
+          "astId": 9205,
+          "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+          "label": "requiresAttribution",
+          "offset": 1,
+          "slot": "3",
+          "type": "t_bool"
+        },
+        {
+          "astId": 9207,
+          "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+          "label": "active",
+          "offset": 2,
+          "slot": "3",
+          "type": "t_bool"
+        },
+        {
+          "astId": 9209,
+          "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+          "label": "pilFlags",
+          "offset": 3,
+          "slot": "3",
+          "type": "t_uint16"
+        },
+        {
+          "astId": 9211,
+          "contract": "src/LicenseRegistry.sol:LicenseRegistry",
+          "label": "defaultDuration",
+          "offset": 5,
+          "slot": "3",
+          "type": "t_uint32"
+        }
+      ]
+    },
+    "t_uint128": {
+      "encoding": "inplace",
+      "label": "uint128",
+      "numberOfBytes": "16"
+    },
+    "t_uint16": {
+      "encoding": "inplace",
+      "label": "uint16",
+      "numberOfBytes": "2"
+    },
+    "t_uint256": {
+      "encoding": "inplace",
+      "label": "uint256",
+      "numberOfBytes": "32"
+    },
+    "t_uint32": {
+      "encoding": "inplace",
+      "label": "uint32",
+      "numberOfBytes": "4"
+    },
+    "t_uint64": {
+      "encoding": "inplace",
+      "label": "uint64",
+      "numberOfBytes": "8"
+    }
+  }
+}

@@ -500,8 +500,12 @@ contract ScreeningAttestations_AttesterInvariant_Test is ScreeningAttestationsBa
     }
 
     /// @notice For every attester we registered, isApprovedAttester must agree (until revoke).
+    /// @dev Open-fuzzing against the screening contract exercises owner-only / EAS paths that
+    ///      revert by design; keep fail-on-revert off for this suite so those reverts don't fail
+    ///      the run. The registered-attester property is what we actually assert below.
     /// forge-config: default.invariant.runs = 16
     /// forge-config: default.invariant.depth = 32
+    /// forge-config: default.invariant.fail-on-revert = false
     function invariant_ApprovedSetConsistent() public view {
         for (uint256 i = 0; i < approvedSet.length; i++) {
             assertTrue(screening.isApprovedAttester(approvedSet[i]), "registered attester must remain approved");
@@ -527,8 +531,12 @@ contract ScreeningAttestations_LocalRevokeMonotonicity_Test is ScreeningAttestat
     }
 
     /// @notice After localRevoke, no subsequent call to isValid(UID, any, any) returns true.
+    /// @dev Open-fuzzing against the screening contract exercises owner-only / EAS paths that
+    ///      revert by design; keep fail-on-revert off for this suite. Monotonicity of
+    ///      `isValid` post-revoke is asserted below.
     /// forge-config: default.invariant.runs = 16
     /// forge-config: default.invariant.depth = 32
+    /// forge-config: default.invariant.fail-on-revert = false
     function invariant_LocalRevokeIsTerminal() public view {
         assertFalse(screening.isValid(UID, canonicalHash, ALICE));
         assertFalse(screening.isValid(UID, canonicalHash, BOB));

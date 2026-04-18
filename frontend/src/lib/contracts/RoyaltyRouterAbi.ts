@@ -1,5 +1,39 @@
 export const RoyaltyRouterAbi = [
   {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "designRegistry_",
+        "type": "address",
+        "internalType": "contract IDesignRegistry"
+      },
+      {
+        "name": "treasury_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "poolManager_",
+        "type": "address",
+        "internalType": "contract IPoolManager"
+      },
+      {
+        "name": "governance_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "fallback",
+    "stateMutability": "payable"
+  },
+  {
+    "type": "receive",
+    "stateMutability": "payable"
+  },
+  {
     "type": "function",
     "name": "DESIGN_REGISTRY",
     "inputs": [],

@@ -1,5 +1,21 @@
 export const ProvenanceRegistryAbi = [
   {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "designRegistry_",
+        "type": "address",
+        "internalType": "contract IDesignRegistry"
+      },
+      {
+        "name": "owner_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
     "type": "function",
     "name": "MAX_PAGE_LIMIT",
     "inputs": [],
