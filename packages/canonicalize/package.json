@@ -1,0 +1,43 @@
+{
+  "name": "@seqora/canonicalize",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared SBOL3 → URDNA2015 → keccak256 canonicalizer. Single source of truth for Seqora tokenId derivation.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p .",
+    "typecheck": "tsc -p . --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "generate-fixture": "tsx scripts/generate-fixture.ts"
+  },
+  "dependencies": {
+    "@noble/hashes": "^1.4.0",
+    "n3": "^1.17.4",
+    "rdf-canonize": "^4.0.1",
+    "rdfxml-streaming-parser": "^3.0.0"
+  },
+  "devDependencies": {
+    "@rdfjs/types": "^2.0.1",
+    "@types/n3": "^1.16.4",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.5.0",
+    "vitest": "^2.1.9"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
