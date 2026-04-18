@@ -2,25 +2,18 @@
 
 import { useState } from "react";
 import { useReadContract, useChainId } from "wagmi";
-import { formatUnits } from "viem";
+import type { ReadContractReturnType } from "viem";
 import { Search, ExternalLink, Dna } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { DesignRegistryAbi, getAddress } from "@/lib/contracts";
+import { networkLabel, networkStatus } from "@/lib/explorer";
 
-type Design = {
-  registrant: `0x${string}`;
-  canonicalHash: `0x${string}`;
-  ga4ghSeqhash: `0x${string}`;
-  arweaveTx: string;
-  ceramicStreamId: string;
-  royalty: {
-    bps: number;
-    recipient: `0x${string}`;
-  };
-  screeningAttestationUID: `0x${string}`;
-  parentTokenIds: `0x${string}`[];
-  registeredAt: bigint;
-};
+// Type inferred from the ABI so it stays in sync with the on-chain tuple
+// (see DesignRegistryAbi#getDesign).
+type Design = ReadContractReturnType<
+  typeof DesignRegistryAbi,
+  "getDesign"
+>;
 
 function DesignCard({ tokenId, design }: { tokenId: string; design: Design }) {
   const shortHash = `${design.canonicalHash.slice(0, 10)}...${design.canonicalHash.slice(-8)}`;
@@ -130,7 +123,7 @@ function DesignLookup() {
       )}
 
       {design && isRegistered && (
-        <DesignCard tokenId={tokenId} design={design as unknown as Design} />
+        <DesignCard tokenId={tokenId} design={design} />
       )}
 
       {!isRegistered && tokenId.length >= 10 && !isLoading && (
@@ -138,6 +131,33 @@ function DesignLookup() {
           No design registered with this token ID.
         </div>
       )}
+    </div>
+  );
+}
+
+function QuickStats() {
+  const chainId = useChainId();
+  const status = networkStatus(chainId);
+  const statusClass =
+    status === "Mainnet"
+      ? "text-primary"
+      : status === "Testnet"
+        ? "text-primary"
+        : "text-text-tertiary";
+
+  return (
+    <div className="rounded-xl border border-border bg-surface p-6">
+      <h3 className="text-text-primary font-semibold mb-3">Quick Stats</h3>
+      <div className="space-y-3 text-sm">
+        <div className="flex justify-between">
+          <span className="text-text-tertiary">Network</span>
+          <span className="text-text-secondary">{networkLabel(chainId)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-text-tertiary">Status</span>
+          <span className={statusClass}>{status}</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -162,21 +182,7 @@ export default function RegistryPage() {
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-xl border border-border bg-surface p-6">
-              <h3 className="text-text-primary font-semibold mb-3">
-                Quick Stats
-              </h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-text-tertiary">Network</span>
-                  <span className="text-text-secondary">Base Sepolia</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-tertiary">Status</span>
-                  <span className="text-primary">Testnet</span>
-                </div>
-              </div>
-            </div>
+            <QuickStats />
 
             <a
               href="/register"

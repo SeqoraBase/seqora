@@ -2,10 +2,23 @@
 
 import { useState, useCallback } from "react";
 import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { keccak256, toHex, encodeAbiParameters, parseAbiParameters } from "viem";
+import { keccak256 } from "viem";
 import { Upload, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { DesignRegistryAbi, getAddress } from "@/lib/contracts";
+import { basescanTxUrl } from "@/lib/explorer";
+
+const ZERO_BYTES32 =
+  "0x0000000000000000000000000000000000000000000000000000000000000000" as const;
+
+// Lightweight bytes32 shape check: 0x + 64 hex chars.
+function isBytes32(value: string): value is `0x${string}` {
+  return /^0x[0-9a-fA-F]{64}$/.test(value);
+}
+
+function isNonZeroBytes32(value: string): value is `0x${string}` {
+  return isBytes32(value) && value.toLowerCase() !== ZERO_BYTES32;
+}
 
 export default function RegisterPage() {
   const { address, isConnected } = useAccount();
@@ -28,14 +41,25 @@ export default function RegisterPage() {
   const handleFileUpload = useCallback(async (file: File) => {
     setSbolFile(file);
     const buffer = await file.arrayBuffer();
+    // TODO(cluster A): replace raw keccak with canonicalizeSbol from
+    // @seqora/canonicalize once the shared canonicalizer is wired in.
     const hash = keccak256(new Uint8Array(buffer));
     setCanonicalHash(hash);
   }, []);
 
+  const screeningUIDValid = isNonZeroBytes32(screeningUID);
+  const canonicalHashValid = isBytes32(canonicalHash);
+  const canSubmit =
+    !!address &&
+    canonicalHashValid &&
+    screeningUIDValid &&
+    !isPending &&
+    !isConfirming;
+
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      if (!address || !canonicalHash) return;
+      if (!address || !canonicalHashValid || !screeningUIDValid) return;
 
       writeContract({
         address: registryAddress,
@@ -44,7 +68,7 @@ export default function RegisterPage() {
         args: [
           address,
           canonicalHash as `0x${string}`,
-          "0x0000000000000000000000000000000000000000000000000000000000000000" as `0x${string}`,
+          ZERO_BYTES32,
           arweaveTx,
           ceramicStreamId,
           {
@@ -52,12 +76,23 @@ export default function RegisterPage() {
             recipient: address,
             parentSplitBps: 0,
           },
-          (screeningUID || "0x0000000000000000000000000000000000000000000000000000000000000000") as `0x${string}`,
+          screeningUID as `0x${string}`,
           [],
         ],
       });
     },
-    [address, canonicalHash, arweaveTx, ceramicStreamId, royaltyBps, screeningUID, registryAddress, writeContract]
+    [
+      address,
+      canonicalHash,
+      canonicalHashValid,
+      arweaveTx,
+      ceramicStreamId,
+      royaltyBps,
+      screeningUID,
+      screeningUIDValid,
+      registryAddress,
+      writeContract,
+    ]
   );
 
   return (
@@ -187,15 +222,25 @@ export default function RegisterPage() {
                 type="text"
                 value={screeningUID}
                 onChange={(e) => setScreeningUID(e.target.value)}
-                placeholder="EAS attestation UID from approved screener"
+                placeholder="0x... (EAS attestation UID from approved screener)"
                 className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-primary/60 font-mono text-sm"
               />
+              <p className="mt-2 text-xs text-text-tertiary">
+                Required. Obtain a valid EAS attestation UID from an approved
+                biosafety screener before registering — the contract rejects
+                zero / missing UIDs with <code>AttestationInvalid</code>.
+              </p>
+              {screeningUID.length > 0 && !screeningUIDValid && (
+                <p className="mt-1 text-xs text-red-400">
+                  Must be a non-zero 32-byte hex value (0x + 64 hex chars).
+                </p>
+              )}
             </div>
 
             {/* Submit */}
             <button
               type="submit"
-              disabled={isPending || isConfirming || !canonicalHash}
+              disabled={!canSubmit}
               className="w-full rounded-xl bg-primary py-3.5 font-semibold text-sm transition-all hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ color: "#0A0B0F" }}
             >
@@ -208,6 +253,10 @@ export default function RegisterPage() {
                 <span className="flex items-center justify-center gap-2">
                   <Loader2 size={16} className="animate-spin" /> Confirming...
                 </span>
+              ) : !canonicalHashValid ? (
+                "Enter canonical hash"
+              ) : !screeningUIDValid ? (
+                "Enter screening attestation UID"
               ) : (
                 "Register Design"
               )}
@@ -226,7 +275,7 @@ export default function RegisterPage() {
                 <CheckCircle size={16} className="inline mr-2" />
                 Design registered!{" "}
                 <a
-                  href={`https://sepolia.basescan.org/tx/${txHash}`}
+                  href={basescanTxUrl(chainId, txHash)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline"
