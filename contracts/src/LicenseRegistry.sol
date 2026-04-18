@@ -349,7 +349,7 @@ contract LicenseRegistry is
             resolvedExpiry = uint64(block.timestamp) + uint64(t.defaultDuration) * SECONDS_PER_DAY;
         } else if (resolvedExpiry != 0) {
             if (resolvedExpiry <= block.timestamp) {
-                revert SeqoraErrors.ZeroValue(); // reuse: "must be in future" is a ZeroValue-shaped error
+                revert SeqoraErrors.ExpiryNotInFuture(resolvedExpiry);
             }
             uint256 delta = uint256(resolvedExpiry) - block.timestamp;
             if (delta > SeqoraTypes.MAX_LICENSE_DURATION) {

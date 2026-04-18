@@ -320,17 +320,19 @@ contract LicenseRegistry_Grant_Test is LicenseRegistryHarness {
 
     function test_Grant_RevertsWhen_ExpiryInPast() public {
         vm.warp(1_000_000);
+        uint64 expiry = uint64(block.timestamp - 1);
         vm.prank(ALICE);
-        vm.expectRevert(SeqoraErrors.ZeroValue.selector);
-        licenses.grantLicense(designId, Tmpl.OPEN_MTA, BOB, uint64(block.timestamp - 1), 0);
+        vm.expectRevert(abi.encodeWithSelector(SeqoraErrors.ExpiryNotInFuture.selector, expiry));
+        licenses.grantLicense(designId, Tmpl.OPEN_MTA, BOB, expiry, 0);
     }
 
     function test_Grant_ExpiryEqualsNow_Reverts() public {
         // expiry == block.timestamp must revert because `resolvedExpiry <= block.timestamp`.
         vm.warp(1_000_000);
+        uint64 expiry = uint64(block.timestamp);
         vm.prank(ALICE);
-        vm.expectRevert(SeqoraErrors.ZeroValue.selector);
-        licenses.grantLicense(designId, Tmpl.OPEN_MTA, BOB, uint64(block.timestamp), 0);
+        vm.expectRevert(abi.encodeWithSelector(SeqoraErrors.ExpiryNotInFuture.selector, expiry));
+        licenses.grantLicense(designId, Tmpl.OPEN_MTA, BOB, expiry, 0);
     }
 
     function test_Grant_DefaultDuration_Derives() public {
