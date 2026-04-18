@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from "react";
 import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { keccak256 } from "viem";
 import { Upload, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { DesignRegistryAbi, getAddress } from "@/lib/contracts";
@@ -31,6 +30,8 @@ export default function RegisterPage() {
   const [royaltyBps, setRoyaltyBps] = useState("500");
   const [screeningUID, setScreeningUID] = useState("");
   const [sbolFile, setSbolFile] = useState<File | null>(null);
+  const [hashing, setHashing] = useState(false);
+  const [hashError, setHashError] = useState<string | null>(null);
 
   const { writeContract, data: txHash, isPending, error: writeError } = useWriteContract();
 
@@ -40,11 +41,24 @@ export default function RegisterPage() {
 
   const handleFileUpload = useCallback(async (file: File) => {
     setSbolFile(file);
-    const buffer = await file.arrayBuffer();
-    // TODO(cluster A): replace raw keccak with canonicalizeSbol from
-    // @seqora/canonicalize once the shared canonicalizer is wired in.
-    const hash = keccak256(new Uint8Array(buffer));
-    setCanonicalHash(hash);
+    setCanonicalHash("");
+    setHashError(null);
+    setHashing(true);
+    try {
+      const body = new FormData();
+      body.append("sbol", file);
+      const res = await fetch("/api/canonicalize", { method: "POST", body });
+      const json = (await res.json()) as { canonicalHash?: string; error?: string };
+      if (!res.ok || !json.canonicalHash) {
+        setHashError(json.error ?? `canonicalize failed (HTTP ${res.status})`);
+        return;
+      }
+      setCanonicalHash(json.canonicalHash);
+    } catch (err) {
+      setHashError(err instanceof Error ? err.message : "canonicalize request failed");
+    } finally {
+      setHashing(false);
+    }
   }, []);
 
   const screeningUIDValid = isNonZeroBytes32(screeningUID);
@@ -53,6 +67,7 @@ export default function RegisterPage() {
     !!address &&
     canonicalHashValid &&
     screeningUIDValid &&
+    !hashing &&
     !isPending &&
     !isConfirming;
 
@@ -128,14 +143,20 @@ export default function RegisterPage() {
                 <span className="text-text-secondary text-sm">
                   {sbolFile ? sbolFile.name : "Drop SBOL file or click to browse"}
                 </span>
-                {canonicalHash && (
+                {hashing && (
+                  <span className="text-text-tertiary text-xs mt-2 flex items-center gap-1.5">
+                    <Loader2 size={12} className="animate-spin" />
+                    Canonicalizing (URDNA2015 → keccak256)...
+                  </span>
+                )}
+                {!hashing && canonicalHash && (
                   <span className="text-primary text-xs mt-2 font-mono">
                     {canonicalHash.slice(0, 18)}...
                   </span>
                 )}
                 <input
                   type="file"
-                  accept=".xml,.sbol,.rdf"
+                  accept=".xml,.sbol,.rdf,.ttl"
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -143,6 +164,12 @@ export default function RegisterPage() {
                   }}
                 />
               </label>
+              {hashError && (
+                <p className="mt-2 text-xs text-red-400">
+                  <AlertCircle size={12} className="inline mr-1" />
+                  {hashError}
+                </p>
+              )}
             </div>
 
             {/* Canonical Hash (manual override) */}
@@ -244,7 +271,11 @@ export default function RegisterPage() {
               className="w-full rounded-xl bg-primary py-3.5 font-semibold text-sm transition-all hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ color: "#0A0B0F" }}
             >
-              {isPending ? (
+              {hashing ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 size={16} className="animate-spin" /> Canonicalizing...
+                </span>
+              ) : isPending ? (
                 <span className="flex items-center justify-center gap-2">
                   <Loader2 size={16} className="animate-spin" /> Confirm in
                   Wallet...

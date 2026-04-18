@@ -510,11 +510,6 @@ export const ScreeningAttestationsAbi = [
   },
   {
     "type": "error",
-    "name": "CanonicalHashMismatch",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "EnforcedPause",
     "inputs": []
   },

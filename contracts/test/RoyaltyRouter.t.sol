@@ -929,7 +929,7 @@ contract RoyaltyRouter_HookIntegration is RoyaltyRouterBase {
 
     function testFuzz_Hook_SplitsChain(address splitsAddr, address fallbackRecipient) public {
         vm.assume(splitsAddr != address(0) && splitsAddr != address(router) && splitsAddr != address(poolManager));
-        vm.assume(splitsAddr != address(registry) && splitsAddr != address(usdc));
+        vm.assume(splitsAddr != address(registry) && splitsAddr != address(usdc) && splitsAddr != TREASURY);
         vm.assume(fallbackRecipient != address(0) && fallbackRecipient != splitsAddr);
         vm.assume(fallbackRecipient != TREASURY);
         // Avoid splitsAddr receiving pre-existing transfers from address(this) in lifecycle.

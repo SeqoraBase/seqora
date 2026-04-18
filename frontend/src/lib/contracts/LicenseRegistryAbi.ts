@@ -1260,6 +1260,17 @@ export const LicenseRegistryAbi = [
   },
   {
     "type": "error",
+    "name": "ExpiryNotInFuture",
+    "inputs": [
+      {
+        "name": "expiry",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ]
+  },
+  {
+    "type": "error",
     "name": "FailedCall",
     "inputs": []
   },
