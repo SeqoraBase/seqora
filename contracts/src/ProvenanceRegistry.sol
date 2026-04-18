@@ -234,36 +234,36 @@ contract ProvenanceRegistry is IProvenanceRegistry, Ownable2Step, Pausable, Reen
     // -------------------------------------------------------------------------
 
     /// @inheritdoc IProvenanceRegistry
-    /// @dev Owner-only. Idempotent: setting the current value re-emits the event. Use
-    ///      `registerOracle` / `revokeOracle` as self-documenting aliases.
-    function setOracleApproved(address oracle, bool approved) external onlyOwner {
+    /// @dev Owner-only. Idempotent: setting the current value re-emits the event. Canonical
+    ///      setter — `registerOracle` / `revokeOracle` route through here.
+    function setOracleApproved(address oracle, bool approved) public onlyOwner {
         if (oracle == address(0)) revert SeqoraErrors.ZeroAddress();
         _approvedOracle[oracle] = approved;
         emit OracleApprovalChanged(oracle, approved);
     }
 
     /// @notice Convenience wrapper for `setOracleApproved(oracle, true)`.
+    /// @dev Prefer {setOracleApproved}.
     /// @param oracle Oracle wallet to approve.
-    function registerOracle(address oracle) external onlyOwner {
-        if (oracle == address(0)) revert SeqoraErrors.ZeroAddress();
-        _approvedOracle[oracle] = true;
-        emit OracleApprovalChanged(oracle, true);
+    function registerOracle(address oracle) external {
+        setOracleApproved(oracle, true);
     }
 
     /// @notice Convenience wrapper for `setOracleApproved(oracle, false)`.
+    /// @dev Prefer {setOracleApproved}.
     /// @param oracle Oracle wallet to revoke.
-    function revokeOracle(address oracle) external onlyOwner {
-        if (oracle == address(0)) revert SeqoraErrors.ZeroAddress();
-        _approvedOracle[oracle] = false;
-        emit OracleApprovalChanged(oracle, false);
+    function revokeOracle(address oracle) external {
+        setOracleApproved(oracle, false);
     }
 
     /// @inheritdoc IProvenanceRegistry
+    /// @dev Canonical approval-query; {isApprovedOracle} is a naming-only alias.
     function isOracleApproved(address oracle) external view returns (bool approved) {
         approved = _approvedOracle[oracle];
     }
 
     /// @notice Alias matching the brief's `isApprovedOracle` naming.
+    /// @dev Prefer {isOracleApproved}.
     /// @param oracle Address to check.
     /// @return approved True iff `oracle` is in the approved set.
     function isApprovedOracle(address oracle) external view returns (bool approved) {
@@ -302,11 +302,13 @@ contract ProvenanceRegistry is IProvenanceRegistry, Ownable2Step, Pausable, Reen
     }
 
     /// @inheritdoc IProvenanceRegistry
+    /// @dev Canonical record-count view; {getRecordCount} is a naming-only alias.
     function provenanceCount(uint256 tokenId) external view returns (uint256 count) {
         count = _records[tokenId].length;
     }
 
     /// @notice O(1) record count for a tokenId. Alias for `provenanceCount`.
+    /// @dev Prefer {provenanceCount}.
     /// @param tokenId Design id.
     /// @return count Length of the records array.
     function getRecordCount(uint256 tokenId) external view returns (uint256 count) {

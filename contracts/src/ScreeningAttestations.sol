@@ -234,11 +234,13 @@ contract ScreeningAttestations is IScreeningAttestations, Ownable2Step, Pausable
     }
 
     /// @inheritdoc IScreeningAttestations
+    /// @dev Canonical approval-query; {isApprovedAttester} is a naming-only alias.
     function isApproved(address attester) external view returns (bool approved) {
         approved = _attesterKind[attester] != SeqoraTypes.ScreenerKind.Unknown;
     }
 
     /// @notice Convenience alias matching the brief's `isApprovedAttester` naming.
+    /// @dev Prefer {isApproved}.
     /// @param attester Address to check.
     /// @return approved True iff the attester is in the approved set.
     function isApprovedAttester(address attester) external view returns (bool approved) {
