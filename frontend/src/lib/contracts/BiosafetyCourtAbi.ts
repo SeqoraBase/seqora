@@ -853,6 +853,25 @@ export const BiosafetyCourtAbi = [
   },
   {
     "type": "event",
+    "name": "ReviewerCutWithdrawn",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "ReviewerSlashed",
     "inputs": [
       {
@@ -992,6 +1011,25 @@ export const BiosafetyCourtAbi = [
         "type": "address",
         "indexed": true,
         "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "TreasuryWithdrawn",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -1231,17 +1269,6 @@ export const BiosafetyCourtAbi = [
   {
     "type": "error",
     "name": "NotSafetyCouncil",
-    "inputs": [
-      {
-        "name": "caller",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "NotSafetyCouncilError",
     "inputs": [
       {
         "name": "caller",
