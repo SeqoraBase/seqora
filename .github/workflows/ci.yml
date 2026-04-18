@@ -84,8 +84,8 @@ jobs:
         working-directory: frontend
         run: npm run build
 
-  synbiohub-ingest:
-    name: synbiohub-ingest build + test
+  canonicalize:
+    name: canonicalize build + test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -94,7 +94,54 @@ jobs:
         with:
           node-version: "22"
           cache: npm
+          cache-dependency-path: packages/canonicalize/package-lock.json
+
+      - name: Install
+        working-directory: packages/canonicalize
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: packages/canonicalize
+        run: npm run typecheck
+
+      - name: Build
+        working-directory: packages/canonicalize
+        run: npm run build
+
+      - name: Test
+        working-directory: packages/canonicalize
+        run: npm test
+
+      - name: Regenerate fixture and assert no drift
+        working-directory: packages/canonicalize
+        run: |
+          npm run generate-fixture
+          git diff --exit-code -- ../../contracts/test/fixtures/canonical-hash.json
+
+  synbiohub-ingest:
+    name: synbiohub-ingest build + test
+    runs-on: ubuntu-latest
+    # The ingest tool depends on ../../packages/canonicalize via a file: specifier,
+    # so its install step builds the shared package first.
+    needs: canonicalize
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
           cache-dependency-path: tools/synbiohub-ingest/package-lock.json
+
+      # The shared package has its own lockfile; install + build it first so the
+      # file: dep can be resolved to prebuilt dist/ output during ingest install.
+      - name: Install @seqora/canonicalize
+        working-directory: packages/canonicalize
+        run: npm ci
+
+      - name: Build @seqora/canonicalize
+        working-directory: packages/canonicalize
+        run: npm run build
 
       - name: Install
         working-directory: tools/synbiohub-ingest
