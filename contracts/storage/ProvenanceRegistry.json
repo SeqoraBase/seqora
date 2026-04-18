@@ -54,7 +54,7 @@
       "label": "_records",
       "offset": 0,
       "slot": "5",
-      "type": "t_mapping(t_uint256,t_array(t_struct(ProvenanceRecord)6686_storage)dyn_storage)"
+      "type": "t_mapping(t_uint256,t_array(t_struct(ProvenanceRecord)6651_storage)dyn_storage)"
     },
     {
       "astId": 5437,
@@ -87,11 +87,11 @@
       "label": "address",
       "numberOfBytes": "20"
     },
-    "t_array(t_struct(ProvenanceRecord)6686_storage)dyn_storage": {
+    "t_array(t_struct(ProvenanceRecord)6651_storage)dyn_storage": {
       "encoding": "dynamic_array",
       "label": "struct SeqoraTypes.ProvenanceRecord[]",
       "numberOfBytes": "32",
-      "base": "t_struct(ProvenanceRecord)6686_storage"
+      "base": "t_struct(ProvenanceRecord)6651_storage"
     },
     "t_bool": {
       "encoding": "inplace",
@@ -103,7 +103,7 @@
       "label": "bytes32",
       "numberOfBytes": "32"
     },
-    "t_enum(ProvenanceKind)6557": {
+    "t_enum(ProvenanceKind)6522": {
       "encoding": "inplace",
       "label": "enum SeqoraTypes.ProvenanceKind",
       "numberOfBytes": "1"
@@ -122,12 +122,12 @@
       "numberOfBytes": "32",
       "value": "t_bool"
     },
-    "t_mapping(t_uint256,t_array(t_struct(ProvenanceRecord)6686_storage)dyn_storage)": {
+    "t_mapping(t_uint256,t_array(t_struct(ProvenanceRecord)6651_storage)dyn_storage)": {
       "encoding": "mapping",
       "key": "t_uint256",
       "label": "mapping(uint256 => struct SeqoraTypes.ProvenanceRecord[])",
       "numberOfBytes": "32",
-      "value": "t_array(t_struct(ProvenanceRecord)6686_storage)dyn_storage"
+      "value": "t_array(t_struct(ProvenanceRecord)6651_storage)dyn_storage"
     },
     "t_mapping(t_uint256,t_mapping(t_bytes32,t_bool))": {
       "encoding": "mapping",
@@ -141,21 +141,21 @@
       "label": "string",
       "numberOfBytes": "32"
     },
-    "t_struct(ProvenanceRecord)6686_storage": {
+    "t_struct(ProvenanceRecord)6651_storage": {
       "encoding": "inplace",
       "label": "struct SeqoraTypes.ProvenanceRecord",
       "numberOfBytes": "96",
       "members": [
         {
-          "astId": 6679,
+          "astId": 6644,
           "contract": "src/ProvenanceRegistry.sol:ProvenanceRegistry",
           "label": "kind",
           "offset": 0,
           "slot": "0",
-          "type": "t_enum(ProvenanceKind)6557"
+          "type": "t_enum(ProvenanceKind)6522"
         },
         {
-          "astId": 6681,
+          "astId": 6646,
           "contract": "src/ProvenanceRegistry.sol:ProvenanceRegistry",
           "label": "recordHash",
           "offset": 0,
@@ -163,7 +163,7 @@
           "type": "t_bytes32"
         },
         {
-          "astId": 6683,
+          "astId": 6648,
           "contract": "src/ProvenanceRegistry.sol:ProvenanceRegistry",
           "label": "submitter",
           "offset": 0,
@@ -171,7 +171,7 @@
           "type": "t_address"
         },
         {
-          "astId": 6685,
+          "astId": 6650,
           "contract": "src/ProvenanceRegistry.sol:ProvenanceRegistry",
           "label": "recordedAt",
           "offset": 20,
