@@ -14,19 +14,16 @@ pragma solidity ^0.8.24;
 //                                    afterSwap intercept the swap and route the royalty +
 //                                    protocol fee to 0xSplits + treasury.
 //
-// Interface divergence
-// --------------------
-//   IRoyaltyRouter declares `beforeSwap(address,bytes,bytes,bytes) returns (bytes4)` and
-//   `afterSwap(address,bytes,bytes,bytes,bytes) returns (bytes4)`. Those signatures CANNOT
-//   be invoked by the v4 PoolManager — PoolManager uses the canonical Uniswap v4
+// Hook surface
+// ------------
+//   The v4 PoolManager calls the canonical Uniswap v4
 //   `IHooks.beforeSwap(address,PoolKey,SwapParams,bytes) returns (bytes4,BeforeSwapDelta,
 //   uint24)` and `IHooks.afterSwap(address,PoolKey,SwapParams,BalanceDelta,bytes) returns
-//   (bytes4,int128)`. Their function selectors differ, so both selectors can coexist on
-//   the same contract. The IRoyaltyRouter-shaped entrypoints are retained for ABI
-//   compatibility with the interface and are permanently disabled (revert `HookMisconfigured`
-//   to make any accidental call unambiguous). The REAL v4 hook path is the IHooks
-//   implementation. The interface should be reconciled with the v4 reality in a
-//   follow-up interface-tidy pass.
+//   (bytes4,int128)`. An earlier revision carried v2-shaped
+//   `beforeSwap(address,bytes,bytes,bytes)` / `afterSwap(address,bytes,bytes,bytes,bytes)`
+//   stubs on IRoyaltyRouter purely "for ABI compat". Those selectors were never invoked by
+//   the PoolManager (different function selectors entirely), so they have been removed
+//   from both the interface and this implementation in the v2 source tree.
 //
 // Hook permission encoding (v4)
 // -----------------------------
@@ -384,28 +381,6 @@ contract RoyaltyRouter is IRoyaltyRouter, IHooks, Ownable2Step, ReentrancyGuard 
     /// @notice Disables `renounceOwnership` to prevent governance bricking.
     function renounceOwnership() public view override onlyOwner {
         revert RenounceDisabled();
-    }
-
-    // -------------------------------------------------------------------------
-    // IRoyaltyRouter legacy hook stubs (NOT used by v4 PoolManager — see contract header)
-    // -------------------------------------------------------------------------
-
-    /// @inheritdoc IRoyaltyRouter
-    /// @dev Retained for ABI compatibility with the interface. The v4 PoolManager calls the
-    ///      `IHooks.beforeSwap` overload below (different selector). If an integrator wires
-    ///      this selector by mistake we revert loudly so the misconfiguration surfaces in tests.
-    function beforeSwap(address, bytes calldata, bytes calldata, bytes calldata) external pure returns (bytes4) {
-        revert HookMisconfigured();
-    }
-
-    /// @inheritdoc IRoyaltyRouter
-    /// @dev See `beforeSwap` stub above — kept for ABI compat only.
-    function afterSwap(address, bytes calldata, bytes calldata, bytes calldata, bytes calldata)
-        external
-        pure
-        returns (bytes4)
-    {
-        revert HookMisconfigured();
     }
 
     // -------------------------------------------------------------------------

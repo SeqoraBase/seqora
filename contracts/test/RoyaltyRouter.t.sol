@@ -597,14 +597,23 @@ contract RoyaltyRouter_Governance is RoyaltyRouterBase {
 // =============================================================================
 
 contract RoyaltyRouter_LegacyStubs is RoyaltyRouterBase {
-    function test_LegacyBeforeSwap_Reverts() public {
+    function test_LegacyBeforeSwap_Selector_HitsFallback() public {
+        // v2-shaped `beforeSwap(address,bytes,bytes,bytes) returns (bytes4)` was removed.
+        // An accidental raw call into the old selector must still land in fallback() and
+        // revert HookMisconfigured so misconfigured integrators fail loudly.
         vm.expectRevert(RoyaltyRouter.HookMisconfigured.selector);
-        IRoyaltyRouter(address(router)).beforeSwap(address(0), "", "", "");
+        (bool ok,) = address(router).call(
+            abi.encodeWithSignature("beforeSwap(address,bytes,bytes,bytes)", address(0), "", "", "")
+        );
+        ok;
     }
 
-    function test_LegacyAfterSwap_Reverts() public {
+    function test_LegacyAfterSwap_Selector_HitsFallback() public {
         vm.expectRevert(RoyaltyRouter.HookMisconfigured.selector);
-        IRoyaltyRouter(address(router)).afterSwap(address(0), "", "", "", "");
+        (bool ok,) = address(router).call(
+            abi.encodeWithSignature("afterSwap(address,bytes,bytes,bytes,bytes)", address(0), "", "", "", "")
+        );
+        ok;
     }
 
     function test_ReceiveEth_Reverts() public {

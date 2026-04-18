@@ -89,34 +89,12 @@ interface IRoyaltyRouter {
     function distribute(uint256 tokenId, address currency, uint256 amount) external payable;
 
     // -------------------------------------------------------------------------
-    // Uniswap v4 hook surface (signatures only, full impl elsewhere)
+    // Uniswap v4 hook surface
     // -------------------------------------------------------------------------
-
-    /// @notice Hook fired by the v4 PoolManager before a swap. Used to detect license-bearing trades.
-    /// @dev Full param set mirrors Uniswap v4 IHooks.beforeSwap. Implementation contract will
-    ///      decode the license context, fetch the tokenId, and prepare protocol-fee deduction.
-    /// @param sender Address that initiated the swap.
-    /// @param poolKey Encoded v4 PoolKey (opaque here; decoded in impl).
-    /// @param swapParams Encoded v4 SwapParams (opaque here; decoded in impl).
-    /// @param hookData Arbitrary hook data; expected to carry the license tokenId when applicable.
-    /// @return selector Function selector returned to the PoolManager.
-    function beforeSwap(address sender, bytes calldata poolKey, bytes calldata swapParams, bytes calldata hookData)
-        external
-        returns (bytes4 selector);
-
-    /// @notice Hook fired by the v4 PoolManager after a swap. Takes the 3% protocol fee.
-    /// @dev Emits ProtocolFeeCollected when applicable.
-    /// @param sender Address that initiated the swap.
-    /// @param poolKey Encoded v4 PoolKey (opaque here).
-    /// @param swapParams Encoded v4 SwapParams (opaque here).
-    /// @param swapDelta Encoded v4 BalanceDelta (opaque here).
-    /// @param hookData Arbitrary hook data carrying license context.
-    /// @return selector Function selector returned to the PoolManager.
-    function afterSwap(
-        address sender,
-        bytes calldata poolKey,
-        bytes calldata swapParams,
-        bytes calldata swapDelta,
-        bytes calldata hookData
-    ) external returns (bytes4 selector);
+    //
+    // The actual hook entrypoints live on IHooks (v4-core), NOT this interface. Earlier
+    // revisions of this interface declared v2-shaped `beforeSwap(address,bytes,bytes,bytes)` /
+    // `afterSwap(address,bytes,bytes,bytes,bytes)` stubs for "ABI compatibility", but the v4
+    // PoolManager never invokes those selectors — the canonical v4 selectors differ. The
+    // router implementation inherits `IHooks` directly and exposes the real surface there.
 }
