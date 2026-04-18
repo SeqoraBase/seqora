@@ -4,12 +4,13 @@ import { useCallback, useMemo, useState } from "react";
 import {
   useAccount,
   useChainId,
-  useWaitForTransactionReceipt,
+  usePublicClient,
   useWriteContract,
 } from "wagmi";
 import {
   AlertCircle,
   CheckCircle,
+  Download,
   ExternalLink,
   FileJson,
   Loader2,
@@ -38,6 +39,8 @@ interface ManifestEntry {
   ingestedAt: string;
   status: EntryStatus;
   error?: string;
+  claimTxHash?: `0x${string}`;
+  claimedAt?: string;
 }
 
 interface Manifest {
@@ -84,20 +87,18 @@ function shortTokenId(tokenId: string): string {
   return tokenId.length > 12 ? `${tokenId.slice(0, 6)}…${tokenId.slice(-4)}` : tokenId;
 }
 
-function StatusBadge({ status }: { status: EntryStatus | "registering" | "registered" }) {
+function StatusBadge({ status }: { status: EntryStatus | "registering" }) {
   const styles: Record<string, string> = {
     pending: "text-text-tertiary bg-surface border border-border",
     error: "text-red-400 bg-red-500/10 border border-red-500/30",
     claimed: "text-primary bg-primary/10 border border-primary/30",
     registering: "text-primary bg-primary/10 border border-primary/30",
-    registered: "text-primary bg-primary/10 border border-primary/30",
   };
   const labels: Record<string, string> = {
     pending: "Pending",
     error: "Error",
-    claimed: "Claimed",
+    claimed: "Claimed ✓",
     registering: "Registering…",
-    registered: "Registered ✓",
   };
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full ${styles[status]}`}>
@@ -109,10 +110,8 @@ function StatusBadge({ status }: { status: EntryStatus | "registering" | "regist
 interface EntryCardProps {
   entry: ManifestEntry;
   royaltyBps: string;
-  locallyRegistered: boolean;
   registeringUri: string | null;
   onRegister: (entry: ManifestEntry, form: EntryFormState) => void;
-  txHash: `0x${string}` | undefined;
   isPending: boolean;
   isConfirming: boolean;
   chainId: number;
@@ -121,10 +120,8 @@ interface EntryCardProps {
 function EntryCard({
   entry,
   royaltyBps,
-  locallyRegistered,
   registeringUri,
   onRegister,
-  txHash,
   isPending,
   isConfirming,
   chainId,
@@ -139,21 +136,14 @@ function EntryCard({
   const isActive = registeringUri === entry.sourceUri;
   const isBusy = isActive && (isPending || isConfirming);
 
-  const onChainStatus = locallyRegistered ? "registered" : entry.status;
-  const displayStatus: EntryStatus | "registering" | "registered" =
-    isActive && (isPending || isConfirming)
-      ? "registering"
-      : onChainStatus;
+  const displayStatus: EntryStatus | "registering" =
+    isActive && (isPending || isConfirming) ? "registering" : entry.status;
 
   const screeningValid = isNonZeroBytes32(form.screeningUID);
   const bpsNumber = Number(royaltyBps);
   const royaltyValid = Number.isFinite(bpsNumber) && bpsNumber >= 0 && bpsNumber <= 10000;
   const canRegister =
-    entry.status === "pending" &&
-    !locallyRegistered &&
-    !isBusy &&
-    screeningValid &&
-    royaltyValid;
+    entry.status === "pending" && !isBusy && screeningValid && royaltyValid;
 
   return (
     <div className="rounded-xl border border-border bg-surface p-5">
@@ -221,18 +211,19 @@ function EntryCard({
         </div>
       )}
 
-      {entry.status === "claimed" && !locallyRegistered && (
-        <p className="text-xs text-text-tertiary">
-          Manifest marks this part as already claimed on-chain.
-        </p>
-      )}
-
-      {locallyRegistered && txHash && (
+      {entry.status === "claimed" && entry.claimTxHash && (
         <div className="rounded-lg border border-primary/30 bg-primary/10 p-2 text-xs text-primary flex items-center gap-2">
           <CheckCircle size={12} />
-          <span className="flex-1">Registered on-chain.</span>
+          <span className="flex-1">
+            Registered on-chain
+            {entry.claimedAt && (
+              <span className="text-text-tertiary ml-1">
+                · {new Date(entry.claimedAt).toLocaleString()}
+              </span>
+            )}
+          </span>
           <a
-            href={basescanTxUrl(chainId, txHash)}
+            href={basescanTxUrl(chainId, entry.claimTxHash)}
             target="_blank"
             rel="noopener noreferrer"
             className="underline flex items-center gap-1"
@@ -242,7 +233,13 @@ function EntryCard({
         </div>
       )}
 
-      {entry.status === "pending" && !locallyRegistered && (
+      {entry.status === "claimed" && !entry.claimTxHash && (
+        <p className="text-xs text-text-tertiary">
+          Manifest marks this part as already claimed on-chain.
+        </p>
+      )}
+
+      {entry.status === "pending" && (
         <>
           {!expanded ? (
             <button
@@ -333,25 +330,28 @@ export default function PendingClaimsPage() {
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [royaltyBps, setRoyaltyBps] = useState("500");
-  const [registeringUri, setRegisteringUri] = useState<string | null>(null);
-  // sourceUri → tx hash of a successful register in this session
-  const [registered, setRegistered] = useState<Record<string, `0x${string}`>>({});
+  // Source filename preserved so the download suggests a sensible name.
+  const [sourceFilename, setSourceFilename] = useState<string | null>(null);
+  // Tracks the in-flight submission: which entry and which phase of the tx.
+  const [submission, setSubmission] = useState<{
+    uri: string;
+    phase: "signing" | "confirming";
+  } | null>(null);
+  const [submitError, setSubmitError] = useState<Error | null>(null);
 
-  const { writeContract, data: txHash, isPending, error: writeError, reset } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
-    hash: txHash,
-  });
+  const publicClient = usePublicClient();
+  const { writeContractAsync } = useWriteContract();
 
-  // Commit successful tx → local "registered" map so the entry flips to Claimed.
-  if (isSuccess && txHash && registeringUri && !registered[registeringUri]) {
-    setRegistered((prev) => ({ ...prev, [registeringUri]: txHash }));
-  }
+  const registeringUri = submission?.uri ?? null;
+  const isPending = submission?.phase === "signing";
+  const isConfirming = submission?.phase === "confirming";
 
   const handleFile = useCallback(async (file: File) => {
     setParseError(null);
     try {
       const text = await file.text();
       setManifest(parseManifest(text));
+      setSourceFilename(file.name);
     } catch (err) {
       setManifest(null);
       setParseError(err instanceof Error ? err.message : "failed to parse manifest");
@@ -362,47 +362,88 @@ export default function PendingClaimsPage() {
     setParseError(null);
     if (!raw.trim()) {
       setManifest(null);
+      setSourceFilename(null);
       return;
     }
     try {
       setManifest(parseManifest(raw));
+      setSourceFilename(null);
     } catch (err) {
       setManifest(null);
       setParseError(err instanceof Error ? err.message : "failed to parse manifest");
     }
   }, []);
 
+  const handleDownload = useCallback(() => {
+    if (!manifest) return;
+    const json = JSON.stringify(manifest, null, 2) + "\n";
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    // Suffix with "-claimed" so we don't clobber the original file when the user
+    // drops the download back next to the source.
+    const base = sourceFilename?.replace(/\.json$/i, "") ?? "ingest-manifest";
+    a.download = `${base}-claimed.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, [manifest, sourceFilename]);
+
   const handleRegister = useCallback(
-    (entry: ManifestEntry, form: EntryFormState) => {
+    async (entry: ManifestEntry, form: EntryFormState) => {
       if (!address) return;
       if (!isNonZeroBytes32(form.screeningUID)) return;
       const bps = Number(royaltyBps);
       if (!Number.isFinite(bps) || bps < 0 || bps > 10000) return;
+      if (!publicClient) return;
 
-      reset();
-      setRegisteringUri(entry.sourceUri);
+      setSubmitError(null);
+      setSubmission({ uri: entry.sourceUri, phase: "signing" });
 
-      writeContract({
-        address: registryAddress,
-        abi: DesignRegistryAbi,
-        functionName: "register",
-        args: [
-          address,
-          entry.canonicalHash,
-          ZERO_BYTES32,
-          form.arweaveTx,
-          form.ceramicStreamId,
-          {
-            bps,
-            recipient: address,
-            parentSplitBps: 0,
-          },
-          form.screeningUID,
-          [],
-        ],
-      });
+      try {
+        const hash = await writeContractAsync({
+          address: registryAddress,
+          abi: DesignRegistryAbi,
+          functionName: "register",
+          args: [
+            address,
+            entry.canonicalHash,
+            ZERO_BYTES32,
+            form.arweaveTx,
+            form.ceramicStreamId,
+            {
+              bps,
+              recipient: address,
+              parentSplitBps: 0,
+            },
+            form.screeningUID,
+            [],
+          ],
+        });
+        setSubmission({ uri: entry.sourceUri, phase: "confirming" });
+        await publicClient.waitForTransactionReceipt({ hash });
+        const claimedAt = new Date().toISOString();
+        setManifest((m) =>
+          m
+            ? {
+                ...m,
+                entries: m.entries.map((e) =>
+                  e.sourceUri === entry.sourceUri
+                    ? { ...e, status: "claimed", claimTxHash: hash, claimedAt }
+                    : e,
+                ),
+              }
+            : m,
+        );
+      } catch (err) {
+        setSubmitError(err instanceof Error ? err : new Error(String(err)));
+      } finally {
+        setSubmission(null);
+      }
     },
-    [address, registryAddress, royaltyBps, writeContract, reset]
+    [address, registryAddress, royaltyBps, publicClient, writeContractAsync],
   );
 
   const counts = useMemo(() => {
@@ -411,16 +452,17 @@ export default function PendingClaimsPage() {
     let claimed = 0;
     let error = 0;
     for (const e of manifest.entries) {
-      if (registered[e.sourceUri]) {
-        claimed++;
-        continue;
-      }
       if (e.status === "pending") pending++;
       else if (e.status === "claimed") claimed++;
       else if (e.status === "error") error++;
     }
     return { total: manifest.entries.length, pending, claimed, error };
-  }, [manifest, registered]);
+  }, [manifest]);
+
+  const hasLocalClaims = useMemo(
+    () => Boolean(manifest?.entries.some((e) => e.claimTxHash)),
+    [manifest],
+  );
 
   return (
     <div className="min-h-screen bg-base">
@@ -481,10 +523,8 @@ export default function PendingClaimsPage() {
                     key={entry.sourceUri}
                     entry={entry}
                     royaltyBps={royaltyBps}
-                    locallyRegistered={Boolean(registered[entry.sourceUri])}
                     registeringUri={registeringUri}
                     onRegister={handleRegister}
-                    txHash={registered[entry.sourceUri] ?? (registeringUri === entry.sourceUri ? txHash : undefined)}
                     isPending={isPending}
                     isConfirming={isConfirming}
                     chainId={chainId}
@@ -493,10 +533,10 @@ export default function PendingClaimsPage() {
               </div>
             )}
 
-            {writeError && (
+            {submitError && (
               <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-400 text-sm">
                 <AlertCircle size={16} className="inline mr-2" />
-                {writeError.message.slice(0, 200)}
+                {submitError.message.slice(0, 200)}
               </div>
             )}
           </div>
@@ -535,6 +575,22 @@ export default function PendingClaimsPage() {
                 wired from manifest metadata.
               </p>
             </div>
+
+            {manifest && (
+              <button
+                onClick={handleDownload}
+                disabled={!hasLocalClaims}
+                className="w-full rounded-xl border border-primary/40 bg-primary/10 py-3 text-center font-medium text-sm text-primary hover:bg-primary/15 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:border-border disabled:bg-surface disabled:text-text-tertiary flex items-center justify-center gap-2"
+                title={
+                  hasLocalClaims
+                    ? "Download the manifest with claimed entries stamped. Re-run seqora-synbiohub-ingest --resume to skip them."
+                    : "No entries claimed in this session yet."
+                }
+              >
+                <Download size={14} />
+                Download updated manifest
+              </button>
+            )}
 
             <a
               href="/register"

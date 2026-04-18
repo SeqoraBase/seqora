@@ -32,6 +32,10 @@ export interface ManifestEntry {
   status: "pending" | "claimed" | "error";
   /** Error message if `status === "error"`. */
   error?: string;
+  /** Tx hash of the on-chain register call. Written by the /pending-claims UI after claiming. */
+  claimTxHash?: `0x${string}`;
+  /** ISO timestamp of the on-chain claim. */
+  claimedAt?: string;
 }
 
 export interface Manifest {
