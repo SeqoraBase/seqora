@@ -602,17 +602,15 @@ contract RoyaltyRouter_LegacyStubs is RoyaltyRouterBase {
         // An accidental raw call into the old selector must still land in fallback() and
         // revert HookMisconfigured so misconfigured integrators fail loudly.
         vm.expectRevert(RoyaltyRouter.HookMisconfigured.selector);
-        (bool ok,) = address(router).call(
-            abi.encodeWithSignature("beforeSwap(address,bytes,bytes,bytes)", address(0), "", "", "")
-        );
+        (bool ok,) = address(router)
+            .call(abi.encodeWithSignature("beforeSwap(address,bytes,bytes,bytes)", address(0), "", "", ""));
         ok;
     }
 
     function test_LegacyAfterSwap_Selector_HitsFallback() public {
         vm.expectRevert(RoyaltyRouter.HookMisconfigured.selector);
-        (bool ok,) = address(router).call(
-            abi.encodeWithSignature("afterSwap(address,bytes,bytes,bytes,bytes)", address(0), "", "", "", "")
-        );
+        (bool ok,) = address(router)
+            .call(abi.encodeWithSignature("afterSwap(address,bytes,bytes,bytes,bytes)", address(0), "", "", "", ""));
         ok;
     }
 
