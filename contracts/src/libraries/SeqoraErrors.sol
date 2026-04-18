@@ -33,4 +33,8 @@ library SeqoraErrors {
     /// @notice Thrown when basis-point input exceeds the protocol-wide cap.
     /// @param bps The value supplied.
     error BpsOutOfRange(uint16 bps);
+
+    /// @notice Thrown when a caller-supplied `expiry` timestamp is not strictly in the future.
+    /// @param expiry The expiry timestamp supplied by the caller (seconds since epoch).
+    error ExpiryNotInFuture(uint64 expiry);
 }
