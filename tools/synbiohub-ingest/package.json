@@ -16,6 +16,7 @@
     "dev": "tsx src/cli.ts"
   },
   "dependencies": {
+    "@noble/hashes": "^1.4.0",
     "@seqora/canonicalize": "file:../../packages/canonicalize"
   },
   "devDependencies": {
