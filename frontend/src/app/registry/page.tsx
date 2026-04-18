@@ -191,6 +191,13 @@ export default function RegistryPage() {
             >
               Register New Design
             </a>
+
+            <a
+              href="/pending-claims"
+              className="block w-full rounded-xl border border-border bg-surface py-3 text-center font-medium text-sm text-text-secondary hover:text-text-primary hover:border-primary/40 transition-colors"
+            >
+              Promote ingested parts →
+            </a>
           </div>
         </div>
       </main>
