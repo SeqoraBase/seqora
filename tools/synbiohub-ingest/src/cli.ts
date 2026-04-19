@@ -18,6 +18,7 @@ interface CliArgs {
   limit?: number;
   pageSize?: number;
   requestDelayMs?: number;
+  requestTimeoutMs?: number;
   maxResponseBytes?: number;
   maxRetries?: number;
   checkpointEvery?: number;
@@ -36,6 +37,7 @@ function parseCli(argv: string[]): CliArgs {
       limit: { type: "string" },
       "page-size": { type: "string" },
       "request-delay-ms": { type: "string" },
+      "request-timeout-ms": { type: "string" },
       "max-response-bytes": { type: "string" },
       "max-retries": { type: "string" },
       "checkpoint-every": { type: "string" },
@@ -75,6 +77,7 @@ function parseCli(argv: string[]): CliArgs {
     limit: parseOptionalNumber("--limit", values.limit),
     pageSize: parseOptionalNumber("--page-size", values["page-size"]),
     requestDelayMs: parseOptionalNumber("--request-delay-ms", values["request-delay-ms"]),
+    requestTimeoutMs: parseOptionalNumber("--request-timeout-ms", values["request-timeout-ms"]),
     maxResponseBytes: parseOptionalNumber("--max-response-bytes", values["max-response-bytes"]),
     maxRetries: parseOptionalNumber("--max-retries", values["max-retries"]),
     checkpointEvery: parseOptionalNumber("--checkpoint-every", values["checkpoint-every"]),
@@ -102,6 +105,8 @@ Ingest shaping:
   --request-delay-ms N    Polite delay between HTTP requests. Default: 250.
 
 Safety & transport:
+  --request-timeout-ms N  Per-request timeout. Default: 60000 (60s). SynBioHub's /sbol
+                          endpoint renders SBOL on demand and can be slow for large parts.
   --max-response-bytes N  Max bytes per HTTP response body. Default: 16777216 (16 MiB).
   --max-retries N         Max retry attempts on 5xx/network errors. Default: 3.
 
@@ -172,6 +177,7 @@ async function main(): Promise<void> {
       limit: args.limit,
       pageSize: args.pageSize,
       requestDelayMs: args.requestDelayMs,
+      timeoutMs: args.requestTimeoutMs,
       maxResponseBytes: args.maxResponseBytes,
       maxRetries: args.maxRetries,
       checkpointEvery: args.checkpointEvery,

@@ -14,7 +14,7 @@ export interface SynBioHubClientOptions {
   instance: string;
   /** Polite delay between requests (ms). Defaults to 250. */
   requestDelayMs?: number;
-  /** Request timeout (ms). Defaults to 20_000. */
+  /** Request timeout (ms). Defaults to 60_000. SynBioHub's `/sbol` endpoint renders on demand and can take >20s. */
   timeoutMs?: number;
   /** User-Agent header value. Defaults to Seqora ingest identifier. */
   userAgent?: string;
@@ -87,7 +87,7 @@ export class SynBioHubClient {
     this.instance = opts.instance.replace(/\/$/, "");
     this.instanceHost = new URL(this.instance).host.toLowerCase();
     this.requestDelayMs = opts.requestDelayMs ?? 250;
-    this.timeoutMs = opts.timeoutMs ?? 20_000;
+    this.timeoutMs = opts.timeoutMs ?? 60_000;
     this.userAgent = opts.userAgent ?? DEFAULT_UA;
     this.fetchImpl = opts.fetchImpl ?? fetch;
     this.maxResponseBytes = opts.maxResponseBytes ?? DEFAULT_MAX_RESPONSE_BYTES;

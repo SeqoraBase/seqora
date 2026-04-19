@@ -15,6 +15,8 @@ export interface IngestOptions {
   maxRetries?: number;
   /** Base retry backoff (ms). Defaults to 250ms. */
   retryBackoffMs?: number;
+  /** Per-request timeout (ms). Defaults to 60_000. */
+  timeoutMs?: number;
   /** Optional progress callback, fired once per processed part. */
   onProgress?: (entry: ManifestEntry, index: number) => void;
   /**
@@ -46,6 +48,7 @@ export async function ingest(opts: IngestOptions): Promise<IngestResult> {
     maxResponseBytes: opts.maxResponseBytes,
     maxRetries: opts.maxRetries,
     retryBackoffMs: opts.retryBackoffMs,
+    timeoutMs: opts.timeoutMs,
   });
 
   const entries: ManifestEntry[] = [];

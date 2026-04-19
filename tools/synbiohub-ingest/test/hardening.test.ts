@@ -153,4 +153,30 @@ describe("retry on transient failures", () => {
     expect(body).toBe("<rdf/>");
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
+
+  it("retries when the client's own timeout aborts the request", async () => {
+    // First call: hang past the client timeout so the AbortController fires.
+    // Second call: succeed.
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce((_url, init) => {
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(new DOMException("The operation was aborted.", "AbortError"));
+          });
+        });
+      })
+      .mockResolvedValueOnce(new Response("<rdf/>", { status: 200 }));
+
+    const client = new SynBioHubClient({
+      instance: "https://synbiohub.org",
+      requestDelayMs: 0,
+      retryBackoffMs: 0,
+      timeoutMs: 50,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    const body = await client.fetchSbolRdfXml("https://synbiohub.org/public/p/1");
+    expect(body).toBe("<rdf/>");
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
 });
